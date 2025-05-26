@@ -12,15 +12,25 @@
 #define DEFER4(...) __VA_ARGS__ DEFER3(EMPTY)()
 #define DEFER5(...) __VA_ARGS__ DEFER4(EMPTY)()
 
-#define EVAL_1(...) __VA_ARGS__
-#define EVAL_2(...) EVAL_1(EVAL_1(__VA_ARGS__))
-#define EVAL_3(...) EVAL_2(EVAL_2(__VA_ARGS__))
-#define EVAL_4(...) EVAL_3(EVAL_3(__VA_ARGS__))
-#define EVAL_5(...) EVAL_4(EVAL_4(__VA_ARGS__))
-#define EVAL_6(...) EVAL_5(EVAL_5(__VA_ARGS__))
-#define EVAL_7(...) EVAL_6(EVAL_6(__VA_ARGS__))
-#define EVAL_8(...) EVAL_7(EVAL_7(__VA_ARGS__))
-#define EVAL(...) EVAL_8(__VA_ARGS__)
+#define EVAL0_1(...) __VA_ARGS__
+#define EVAL0_2(...) EVAL0_1(EVAL0_1(__VA_ARGS__))
+#define EVAL0_3(...) EVAL0_2(EVAL0_2(__VA_ARGS__))
+#define EVAL0_4(...) EVAL0_3(EVAL0_3(__VA_ARGS__))
+#define EVAL0_5(...) EVAL0_4(EVAL0_4(__VA_ARGS__))
+#define EVAL0_6(...) EVAL0_5(EVAL0_5(__VA_ARGS__))
+#define EVAL0_7(...) EVAL0_6(EVAL0_6(__VA_ARGS__))
+#define EVAL0_8(...) EVAL0_7(EVAL0_7(__VA_ARGS__))
+#define EVAL0(...) EVAL0_8(__VA_ARGS__)
+
+#define EVAL1_1(...) __VA_ARGS__
+#define EVAL1_2(...) EVAL1_1(EVAL1_1(__VA_ARGS__))
+#define EVAL1_3(...) EVAL1_2(EVAL1_2(__VA_ARGS__))
+#define EVAL1_4(...) EVAL1_3(EVAL1_3(__VA_ARGS__))
+#define EVAL1_5(...) EVAL1_4(EVAL1_4(__VA_ARGS__))
+#define EVAL1_6(...) EVAL1_5(EVAL1_5(__VA_ARGS__))
+#define EVAL1_7(...) EVAL1_6(EVAL1_6(__VA_ARGS__))
+#define EVAL1_8(...) EVAL1_7(EVAL1_7(__VA_ARGS__))
+#define EVAL1(...) EVAL1_8(__VA_ARGS__)
 
 #define EVAL2_1(...) __VA_ARGS__
 #define EVAL2_2(...) EVAL2_1(EVAL2_1(__VA_ARGS__))
@@ -110,7 +120,7 @@
 #define FOR_EACH_NO_EVAL(T, ...)                                               \
   IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(DEFER(T)(OPT_REM_ENCLOSE(                 \
       HEAD(__VA_ARGS__))) DEFER2(FOR_EACH_INDIRECT)()(T, TAIL(__VA_ARGS__)))
-#define FOR_EACH(T, ...) EVAL(FOR_EACH_NO_EVAL(T, __VA_ARGS__))
+#define FOR_EACH(stack, T, ...) EVAL##stack(FOR_EACH_NO_EVAL(T, __VA_ARGS__))
 
 #define COUNT_(_0, _1, _2, _3, _4, _5, _6, _7, N, ...) N
 #define COUNT(...) COUNT_(__VA_ARGS__ __VA_OPT__(, ), 8, 7, 6, 5, 4, 3, 2, 1, 0)
@@ -122,17 +132,17 @@
                DEFER(HEAD)(REM_ENCLOSE(__VA_INDICES__)))                       \
           DEFER2(FOR_EACH_IDX_INDIRECT)()(T, (TAIL __VA_INDICES__),            \
                                           TAIL(__VA_ARGS__)))
-#define FOR_EACH_IDX(T, ...)                                                   \
-  EVAL(FOR_EACH_IDX_NO_EVAL(T, (0, 1, 2, 3, 4, 5, 6, 7), __VA_ARGS__))
+#define FOR_EACH_IDX(stack, T, ...)                                            \
+  EVAL##stack(FOR_EACH_IDX_NO_EVAL(T, (0, 1, 2, 3, 4, 5, 6, 7), __VA_ARGS__))
 
 #define FOR_EACH_MAP_INDIRECT() FOR_EACH_MAP_NO_EVAL
 #define FOR_EACH_MAP_NO_EVAL(T, ...)                                           \
   IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                                          \
       DEFER2(REM_ENCLOSE)((, DEFER(T)(OPT_REM_ENCLOSE(HEAD(__VA_ARGS__)))))    \
           DEFER2(FOR_EACH_MAP_INDIRECT)()(T, TAIL(__VA_ARGS__)))
-#define FOR_EACH_MAP(T, ...)                                                   \
+#define FOR_EACH_MAP(stack, T, ...)                                            \
   IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                                          \
       DEFER(T)(OPT_REM_ENCLOSE(HEAD(__VA_ARGS__))))                            \
-      EVAL(FOR_EACH_MAP_NO_EVAL(T, TAIL(__VA_ARGS__)))
+      EVAL##stack(FOR_EACH_MAP_NO_EVAL(T, TAIL(__VA_ARGS__)))
 
 #endif

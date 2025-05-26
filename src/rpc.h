@@ -36,16 +36,16 @@ bool _rpc_extract_obj(struct mg_str, size_t, void *);
 #define RPC_PASS_ARG(type, name) name
 #define RPC_DEFN(name, ...)                                                    \
   static inline void UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(          \
-      FOR_EACH_MAP(RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...));                 \
+      FOR_EACH_MAP(0, RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...));              \
   void rpc_##name(struct mg_rpc_req *_r) {                                     \
     struct rpc_data *rpc_data = _r->req_data;                                  \
-    FOR_EACH(RPC_DECL_ARG, __VA_ARGS__)                                        \
-    FOR_EACH_IDX(RPC_EXTRACT_ARG, __VA_ARGS__)                                 \
+    FOR_EACH(0, RPC_DECL_ARG, __VA_ARGS__)                                     \
+    FOR_EACH_IDX(0, RPC_EXTRACT_ARG, __VA_ARGS__)                              \
     UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                           \
-        FOR_EACH_MAP(RPC_PASS_ARG, __VA_ARGS__, (, _r)), _r));                 \
+        FOR_EACH_MAP(0, RPC_PASS_ARG, __VA_ARGS__, (, _r)), _r));              \
   }                                                                            \
   static inline void UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(          \
-      FOR_EACH_MAP(RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...))
+      FOR_EACH_MAP(0, RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...))
 
 #define RPC_BEGIN(...)                                                         \
   va_list UNIQUE(args);                                                        \
@@ -88,7 +88,7 @@ size_t _rpc_print_port(void (*)(char, void *), void *, va_list *);
       ",%M" DEFER2(RPC_FMT_INDIRECT)()(TAIL(__VA_ARGS__)))
 #define RPC_FMT(...)                                                           \
   IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))("%M")                                     \
-      EVAL(RPC_FMT_NO_EVAL(TAIL(__VA_ARGS__)))
+      EVAL0(RPC_FMT_NO_EVAL(TAIL(__VA_ARGS__)))
 
 #define RPC_INIT() ((struct rpc_data *)_r->req_data)->conn->data[1] = 'R'
 
@@ -99,7 +99,7 @@ size_t _rpc_print_port(void (*)(char, void *), void *, va_list *);
                    "{%m:%m,%m:[" RPC_FMT(__VA_ARGS__) "]}", MG_ESC("method"),  \
                    MG_ESC(#name),                                              \
                    MG_ESC("params") __VA_OPT__(, )                             \
-                       FOR_EACH_MAP(RPC_PRINT, __VA_ARGS__));                  \
+                       FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__));               \
   } while (0)
 
 #define RPC_REPLY(name, ...)                                                   \
