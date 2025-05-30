@@ -30,6 +30,7 @@ static int port_cmp(const void *_p1, const void *_p2) {
   const struct port *p1 = _p1, *p2 = _p2;
   return strcmp(p1->path, p2->path);
 }
+void print_port(FILE *, va_list *);
 
 void port_connect(struct data *, struct port *);
 void port_disconnect(struct port *);

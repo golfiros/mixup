@@ -2,7 +2,6 @@
 #define __MIXUP_BUS_H__
 
 #include "mixup.h"
-#include "rpc.h"
 
 struct bus {
   char *port[2];
@@ -13,10 +12,13 @@ struct bus {
   float2 vol;
 };
 
-RPC_DECL(bus_new);
-RPC_DECL(bus_delete);
-RPC_DECL(bus_set_port);
-RPC_DECL(bus_set_gain);
-RPC_DECL(bus_set_balance);
+void print_bus(FILE *, va_list *);
+
+// RPCs
+void bus_new(void *);
+void bus_delete(void *);
+void bus_set_port(void *);
+void bus_set_gain(void *);
+void bus_set_balance(void *);
 
 #endif

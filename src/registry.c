@@ -1,11 +1,13 @@
 #include "registry.h"
 #include "bus.h"
 
-size_t _rpc_print_port(void(out)(char, void *), void *ptr, va_list *ap) {
+#define RPC_PRINT_TYPES struct port : print_port
+#include "rpc.h"
+
+void print_port(FILE *fp, va_list *ap) {
   struct port port = va_arg(*ap, typeof(port));
-  return mg_xprintf(out, ptr, "{%m:%m,%m:%m,%m:%M}", MG_ESC("path"),
-                    MG_ESC(port.path), MG_ESC("node"), MG_ESC(port.node),
-                    MG_ESC("input"), MG_ESC(port.input ? "true" : "false"));
+  fprintf(fp, "{\"path\":\"%s\",\"node\":\"%s\",\"input\":\"%s\"}", port.path,
+          port.node, port.input ? "true" : "false");
 }
 
 void port_connect(struct data *data, struct port *port) {
@@ -100,22 +102,7 @@ static void registry_global(void *_data, uint32_t id, uint32_t,
     vec_push(&data->ports, port);
     vec_qsort(&data->ports, port_cmp);
 
-    struct port *port_info = malloc(sizeof *port_info);
-    *port_info = (typeof(*port_info)){
-        .path = strdup(path),
-        .node = node.name,
-        .input = input,
-    };
-
-    size_t head = atomic_load_explicit(&data->queue_head, memory_order_relaxed);
-
-    data->queue[head] = (typeof(*data->queue)){
-        .type = MIXUP_QUEUE_PORT_NEW,
-        .ptr = port_info,
-    };
-
-    size_t next = (head + 1) & (QUEUE_SIZE - 1);
-    atomic_store_explicit(&data->queue_head, next, memory_order_release);
+    rpc_broadcast(data->srv, "port_new", port);
   }
 }
 static void registry_global_remove(void *_data, uint32_t id) {
@@ -136,15 +123,7 @@ static void registry_global_remove(void *_data, uint32_t id) {
     while (port.conn)
       port_disconnect(&port);
 
-    size_t head = atomic_load_explicit(&data->queue_head, memory_order_relaxed);
-
-    data->queue[head] = (typeof(*data->queue)){
-        .type = MIXUP_QUEUE_PORT_DELETE,
-        .ptr = port.path,
-    };
-
-    size_t next = (head + 1) & (QUEUE_SIZE - 1);
-    atomic_store_explicit(&data->queue_head, next, memory_order_release);
+    rpc_broadcast(data->srv, "port_delete", port.path);
   }
 }
 const struct pw_registry_events registry_events = {

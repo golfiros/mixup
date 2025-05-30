@@ -1,18 +1,12 @@
 #ifndef __MIXUP_MIXUP_H__
 #define __MIXUP_MIXUP_H__
 
-#include <mongoose.h>
 #include <pipewire/pipewire.h>
-#include <stdatomic.h>
-#include <unistd.h>
 
 #define MIXUP "mixup"
-#define WEB_ROOT "web"
-#define QUEUE_SIZE 512
 
 #include "vector.h"
 
-static_assert(QUEUE_SIZE && !(QUEUE_SIZE & (QUEUE_SIZE - 1)));
 struct data {
   bool quit;
   void *output[2];
@@ -24,22 +18,11 @@ struct data {
 
   uint32_t filter_id;
 
+  struct srv *srv;
+
   vec(struct node) nodes;
 
-  struct {
-    enum {
-      MIXUP_QUEUE_PORT_NEW,
-      MIXUP_QUEUE_PORT_DELETE,
-    } type;
-    void *ptr;
-  } queue[QUEUE_SIZE];
-  atomic_size_t queue_head;
-  atomic_size_t queue_tail;
-
   vec(struct port) ports;
-
-  struct mg_mgr mgr;
-  struct mg_rpc *rpc;
 
   enum {
     MIXUP_EVENT_NONE = 0,

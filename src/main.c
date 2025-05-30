@@ -1,6 +1,8 @@
 #include "bus.h"
 #include "mixup.h"
 #include "registry.h"
+
+#define RPC_PRINT_TYPES struct bus * : print_bus, struct port : print_port
 #include "rpc.h"
 
 static int impl_buffer_size(struct spa_loop *, bool, uint32_t,
@@ -89,13 +91,13 @@ static const struct pw_filter_events filter_events = {
 };
 
 RPC_DEFN(init) {
-  RPC_BEGIN(data);
-  RPC_INIT();
+  struct data *data = rpc_data();
+  rpc_init();
   pw_thread_loop_lock(data->thread_loop);
-  vec_foreach(port, data->ports) { RPC_REPLY(port_new, port); }
+  vec_foreach(port, data->ports) { rpc_reply("port_new", port); }
   pw_thread_loop_unlock(data->thread_loop);
-  vec_foreach(bus, data->buses) { RPC_REPLY(bus_new, bus); }
-  RPC_RETURN();
+  vec_foreach(bus, data->buses) { rpc_reply("bus_new", bus); }
+  rpc_return();
 }
 
 void loop_quit(void *_data, int) {
@@ -112,9 +114,6 @@ int main(int, char **) {
   vec_init(&data.nodes);
   vec_init(&data.ports);
   vec_init(&data.buses);
-
-  atomic_init(&data.queue_head, 0);
-  atomic_init(&data.queue_tail, 0);
 
   pw_init(nullptr, nullptr);
   if (!(data.thread_loop = pw_thread_loop_new(MIXUP, nullptr))) {
@@ -157,6 +156,20 @@ int main(int, char **) {
     goto err_list;
   }
 
+  data.srv = srv_new();
+  if (!data.srv) {
+    printf("Failed to initialize server");
+    goto err_srv;
+  }
+
+  srv_reg(data.srv, init, "init", &data);
+
+  srv_reg(data.srv, bus_new, "bus_new", &data);
+  srv_reg(data.srv, bus_delete, "bus_delete", &data);
+  srv_reg(data.srv, bus_set_port, "bus_set_port", &data);
+  srv_reg(data.srv, bus_set_gain, "bus_set_gain", &data);
+  srv_reg(data.srv, bus_set_balance, "bus_set_balance", &data);
+
   pw_thread_loop_start(data.thread_loop);
   pw_thread_loop_unlock(data.thread_loop);
 
@@ -164,62 +177,16 @@ int main(int, char **) {
          SPA_ID_INVALID)
     ;
 
-  mg_rpc_add(&data.rpc, mg_str("bus_set_balance"), rpc_bus_set_balance,
-             nullptr);
-  mg_rpc_add(&data.rpc, mg_str("bus_set_gain"), rpc_bus_set_gain, nullptr);
-  mg_rpc_add(&data.rpc, mg_str("bus_set_port"), rpc_bus_set_port, nullptr);
-  mg_rpc_add(&data.rpc, mg_str("bus_delete"), rpc_bus_delete, nullptr);
-  mg_rpc_add(&data.rpc, mg_str("bus_new"), rpc_bus_new, nullptr);
-
-  mg_rpc_add(&data.rpc, mg_str("init"), rpc_init, nullptr);
-  mg_rpc_add(&data.rpc, mg_str("rpc.list"), mg_rpc_list, nullptr);
-
-  mg_mgr_init(&data.mgr);
-
-  if (!mg_http_listen(&data.mgr, "0.0.0.0:8000", server_run, &data)) {
-    printf("Failed to start mongoose server\n");
-    goto err_http;
-  }
-
   printf("Welcome to mixup!\n");
 
-  while (!data.quit) {
-    mg_mgr_poll(&data.mgr, 50);
-
-    size_t head = atomic_load_explicit(&data.queue_head, memory_order_acquire);
-    size_t tail = atomic_load_explicit(&data.queue_tail, memory_order_relaxed);
-
-    while (head != tail) {
-      switch (data.queue[tail].type) {
-      case MIXUP_QUEUE_PORT_NEW: {
-        struct port *port = data.queue[tail].ptr;
-        for (struct mg_connection *c = data.mgr.conns; c; c = c->next)
-          RPC_CALL(c, port_new, (*port));
-        free(port->path);
-        free(port);
-      } break;
-      case MIXUP_QUEUE_PORT_DELETE: {
-        char *path = data.queue[tail].ptr;
-        for (struct mg_connection *c = data.mgr.conns; c; c = c->next)
-          RPC_CALL(c, port_delete, path);
-        free(path);
-      } break;
-      }
-
-      size_t next = (tail + 1) & (QUEUE_SIZE - 1);
-      atomic_store_explicit(&data.queue_tail, next, memory_order_release);
-
-      head = atomic_load_explicit(&data.queue_head, memory_order_acquire);
-      tail = atomic_load_explicit(&data.queue_tail, memory_order_relaxed);
-    }
-  }
+  while (!data.quit)
+    srv_run(data.srv);
+  pw_thread_loop_stop(data.thread_loop);
 
   ret = EXIT_SUCCESS;
 
-err_http:
-  pw_thread_loop_stop(data.thread_loop);
-  mg_mgr_free(&data.mgr);
-  mg_rpc_del(&data.rpc, nullptr);
+err_srv:
+  srv_del(data.srv);
 
   vec_foreach(bus, data.buses) {
     for (size_t j = 0; j < 2; j++)

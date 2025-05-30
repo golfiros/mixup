@@ -2,118 +2,158 @@
 #define __MIXUP_RPC_H__
 
 #include "magic.h"
-#include "mixup.h"
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
 
-struct rpc_data {
-  struct data *data;
-  struct mg_connection *conn;
-};
+struct srv;
 
-bool _rpc_extract_str(struct mg_str, size_t, void *);
-bool _rpc_extract_num(struct mg_str, size_t, void *);
-bool _rpc_extract_bool(struct mg_str, size_t, void *);
-bool _rpc_extract_long(struct mg_str, size_t, void *);
-bool _rpc_extract_ulong(struct mg_str, size_t, void *);
-bool _rpc_extract_obj(struct mg_str, size_t, void *);
-#define RPC_EXTRACT_ARG(type, name, idx)                                       \
-  if (!_Generic(name,                                                          \
-          char *: _rpc_extract_str,                                            \
-          double: _rpc_extract_num,                                            \
-          bool: _rpc_extract_bool,                                             \
-          long: _rpc_extract_long,                                             \
-          unsigned long: _rpc_extract_ulong,                                   \
-          struct bus *: _rpc_extract_obj)(_r->frame, idx, &(name))) {          \
-    mg_rpc_err(_r, -1, "%m",                                                   \
-               MG_ESC("Missing parameter " #name " of type " #type));          \
-    return;                                                                    \
-  }
+struct srv *srv_new();
+void srv_del(struct srv *);
 
-#define RPC_DECL(name) void rpc_##name(struct mg_rpc_req *)
+void srv_reg(struct srv *, void (*)(void *), const char *, void *);
+void srv_run(struct srv *);
 
 #define UNIQUE(name) CAT(name##_, __LINE__)
 #define RPC_FUNC_ARG(type, name) type name
 #define RPC_DECL_ARG(type, name) type name;
+bool _rpc_extract_str(void *, size_t, void *);
+bool _rpc_extract_num(void *, size_t, void *);
+bool _rpc_extract_bool(void *, size_t, void *);
+bool _rpc_extract_long(void *, size_t, void *);
+bool _rpc_extract_obj(void *, size_t, void *);
+#ifndef RPC_EXTRACT_TYPES
+#define RPC_EXTRACT_ARG(type, name, idx)                                       \
+  if (!_Generic((name),                                                        \
+          char *: _rpc_extract_str,                                            \
+          double: _rpc_extract_num,                                            \
+          bool: _rpc_extract_bool,                                             \
+          long: _rpc_extract_long,                                             \
+          void *: _rpc_extract_obj)(_r, idx, &(name))) {                       \
+    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
+    return;                                                                    \
+  }
+#else
+#define RPC_EXTRACT_ARG(type, name, idx)                                       \
+  if (!_Generic((name),                                                        \
+          char *: _rpc_extract_str,                                            \
+          double: _rpc_extract_num,                                            \
+          bool: _rpc_extract_bool,                                             \
+          long: _rpc_extract_long,                                             \
+          void *: _rpc_extract_obj,                                            \
+          RPC_EXTRACT_TYPES)(_r, idx, &(name))) {                              \
+    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
+    return;                                                                    \
+  }
+#endif
 #define RPC_PASS_ARG(type, name) name
 #define RPC_DEFN(name, ...)                                                    \
-  static inline void UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(          \
-      FOR_EACH_MAP(0, RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...));              \
-  void rpc_##name(struct mg_rpc_req *_r) {                                     \
-    struct rpc_data *rpc_data = _r->req_data;                                  \
+  static inline void UNIQUE(_impl_##name)(                                     \
+      FOR_EACH_MAP(0, RPC_FUNC_ARG, ##__VA_ARGS__, (, ...)));                  \
+  void(name)(void *_r) {                                                       \
     FOR_EACH(0, RPC_DECL_ARG, __VA_ARGS__)                                     \
     FOR_EACH_IDX(0, RPC_EXTRACT_ARG, __VA_ARGS__)                              \
-    UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                           \
-        FOR_EACH_MAP(0, RPC_PASS_ARG, __VA_ARGS__, (, _r)), _r));              \
+    UNIQUE(_impl_##name)(                                                      \
+        FOR_EACH_MAP(0, RPC_PASS_ARG, ##__VA_ARGS__, (, _r)));                 \
   }                                                                            \
-  static inline void UNIQUE(name)(IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(          \
-      FOR_EACH_MAP(0, RPC_FUNC_ARG, __VA_ARGS__, (, ...)), ...))
+  static inline void UNIQUE(_impl_##name)(                                     \
+      FOR_EACH_MAP(0, RPC_FUNC_ARG, ##__VA_ARGS__, (, ...)))
 
-#define RPC_BEGIN(...)                                                         \
-  va_list UNIQUE(args);                                                        \
-  va_start(UNIQUE(args));                                                      \
-  struct mg_rpc_req *_r = va_arg(UNIQUE(args), typeof(_r));                    \
-  va_end(UNIQUE(args)) IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                     \
-      ; struct data * DEFER(HEAD)(__VA_ARGS__) =                               \
-            ((struct rpc_data *)_r->req_data)->data)
+void *_rpc_data(void *);
+#define rpc_data()                                                             \
+  ({                                                                           \
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_data(UNIQUE(r));                                                      \
+  })
 
-size_t _rpc_print_str(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_num(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_bool(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_long(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_ulong(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_obj(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_bus(void (*)(char, void *), void *, va_list *);
-size_t _rpc_print_port(void (*)(char, void *), void *, va_list *);
+void _rpc_init(void *);
+#define rpc_init()                                                             \
+  do {                                                                         \
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_init(UNIQUE(r));                                                      \
+  } while (false)
+
+void print_str(FILE *, va_list *);
+void print_num(FILE *, va_list *);
+void print_bool(FILE *, va_list *);
+void print_long(FILE *, va_list *);
+void print_obj(FILE *, va_list *);
+#ifndef RPC_PRINT_TYPES
 #define RPC_PRINT(arg)                                                         \
   _Generic(arg,                                                                \
-      char *: _rpc_print_str,                                                  \
-      double: _rpc_print_num,                                                  \
-      bool: _rpc_print_bool,                                                   \
-      long: _rpc_print_long,                                                   \
-      unsigned long: _rpc_print_ulong,                                         \
-      void *: _rpc_print_obj,                                                  \
-      struct bus *: _rpc_print_bus,                                            \
-      struct port: _rpc_print_port),                                           \
+      char *: print_str,                                                       \
+      double: print_num,                                                       \
+      bool: print_bool,                                                        \
+      long: print_long,                                                        \
+      void *: print_obj),                                                      \
       arg
+#else
+#define RPC_PRINT(arg)                                                         \
+  _Generic(arg,                                                                \
+      char *: print_str,                                                       \
+      double: print_num,                                                       \
+      bool: print_bool,                                                        \
+      long: print_long,                                                        \
+      void *: print_obj,                                                       \
+      RPC_PRINT_TYPES),                                                        \
+      arg
+#endif
 
-#define RPC_RETURN(...)                                                        \
+void _rpc_return(void *, ...);
+#define rpc_return(...)                                                        \
   do {                                                                         \
-    mg_rpc_ok(_r, IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                          \
-                      DEFER("%M", RPC_PRINT(HEAD(__VA_ARGS__))), "null"));     \
-    return;                                                                    \
-  } while (0)
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_return(UNIQUE(r), FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__)             \
+                               __VA_OPT__(, ) nullptr);                        \
+  } while (false)
 
-#define RPC_FMT_INDIRECT() RPC_FMT_NO_EVAL
-#define RPC_FMT_NO_EVAL(...)                                                   \
-  IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))(                                          \
-      ",%M" DEFER2(RPC_FMT_INDIRECT)()(TAIL(__VA_ARGS__)))
-#define RPC_FMT(...)                                                           \
-  IF(IS_LIST_NOT_EMPTY(__VA_ARGS__))("%M")                                     \
-      EVAL0(RPC_FMT_NO_EVAL(TAIL(__VA_ARGS__)))
-
-#define RPC_INIT() ((struct rpc_data *)_r->req_data)->conn->data[1] = 'R'
-
-#define RPC_CALL(conn, name, ...)                                              \
+void _rpc_err(void *, int, const char *, ...);
+#define rpc_err(code, msg)                                                     \
   do {                                                                         \
-    if ((conn)->data[1] == 'R')                                                \
-      mg_ws_printf((conn), WEBSOCKET_OP_TEXT,                                  \
-                   "{%m:%m,%m:[" RPC_FMT(__VA_ARGS__) "]}", MG_ESC("method"),  \
-                   MG_ESC(#name),                                              \
-                   MG_ESC("params") __VA_OPT__(, )                             \
-                       FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__));               \
-  } while (0)
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_err(UNIQUE(r), (code), (msg));                                        \
+  } while (false)
 
-#define RPC_REPLY(name, ...)                                                   \
-  RPC_CALL(((struct rpc_data *)_r->req_data)->conn, name, __VA_ARGS__)
-
-#define RPC_RELAY(name, ...)                                                   \
+void _rpc_reply(void *, const char *, ...);
+#define rpc_reply(name, ...)                                                   \
   do {                                                                         \
-    for (struct mg_connection *_c =                                            \
-             ((struct rpc_data *)_r->req_data)->data->mgr.conns;               \
-         _c; _c = _c->next)                                                    \
-      if (_c != ((struct rpc_data *)_r->req_data)->conn)                       \
-        RPC_CALL(_c, name, __VA_ARGS__);                                       \
-  } while (0);
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_reply(UNIQUE(r), (name),                                              \
+               FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__)                         \
+                   __VA_OPT__(, ) nullptr);                                    \
+  } while (false)
 
-void server_run(struct mg_connection *, int, void *);
+void _rpc_relay(void *, const char *, ...);
+#define rpc_relay(name, ...)                                                   \
+  do {                                                                         \
+    va_list UNIQUE(args);                                                      \
+    va_start(UNIQUE(args));                                                    \
+    void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
+    va_end(UNIQUE(args));                                                      \
+    _rpc_relay(UNIQUE(r), (name),                                              \
+               FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__)                         \
+                   __VA_OPT__(, ) nullptr);                                    \
+  } while (false)
+
+void _rpc_broadcast(struct srv *, const char *, ...);
+#define rpc_broadcast(srv, name, ...)                                          \
+  _rpc_broadcast((srv), (name),                                                \
+                 FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__)                       \
+                     __VA_OPT__(, ) nullptr)
 
 #endif // !__MIXUP_RPC_H__

@@ -1,13 +1,16 @@
 #include "bus.h"
 #include "registry.h"
+#include <stdio.h>
+
+#define RPC_EXTRACT_TYPES struct bus * : _rpc_extract_obj
+#define RPC_PRINT_TYPES struct bus * : print_bus
 #include "rpc.h"
 
-size_t _rpc_print_bus(void(out)(char, void *), void *ptr, va_list *ap) {
+void print_bus(FILE *fp, va_list *ap) {
   struct bus *bus = va_arg(*ap, typeof(bus));
-  return mg_xprintf(out, ptr, "{%m:\"%p\",%m:[%m,%m],%m:%g,%m:%g}",
-                    MG_ESC("id"), bus, MG_ESC("port"), MG_ESC(bus->port[0]),
-                    MG_ESC(bus->port[1]), MG_ESC("gain"), bus->gain,
-                    MG_ESC("balance"), bus->balance);
+  fprintf(fp,
+          "{\"id\":\"%p\",\"port\":[\"%s\",\"%s\"],\"gain\":%f,\"balance\":%f}",
+          bus, bus->port[0], bus->port[1], bus->gain, bus->balance);
 }
 
 #define MIN_GAIN -90.0
@@ -43,7 +46,7 @@ static int impl_bus_new(struct spa_loop *, bool, uint32_t, const void *_args,
   return 0;
 }
 RPC_DEFN(bus_new) {
-  RPC_BEGIN(data);
+  struct data *data = rpc_data();
 
   struct bus *bus = malloc(sizeof *bus);
   *bus = (typeof(*bus)){
@@ -57,8 +60,8 @@ RPC_DEFN(bus_new) {
   pw_loop_invoke(pw_thread_loop_get_loop(data->thread_loop), impl_bus_new,
                  SPA_ID_INVALID, &args, sizeof args, false, data);
 
-  RPC_RELAY(bus_new, bus);
-  RPC_RETURN(bus);
+  rpc_relay("bus_new", bus);
+  rpc_return(bus);
 }
 
 struct args_bus_delete {
@@ -88,14 +91,14 @@ static int impl_bus_delete(struct spa_loop *, bool, uint32_t, const void *_args,
   return 0;
 }
 RPC_DEFN(bus_delete, (struct bus *, bus)) {
-  RPC_BEGIN(data);
+  struct data *data = rpc_data();
   struct args_bus_delete args = {
       .bus = bus,
   };
   pw_loop_invoke(pw_thread_loop_get_loop(data->thread_loop), impl_bus_delete,
                  SPA_ID_INVALID, &args, sizeof args, false, data);
-  RPC_RELAY(bus_delete, ((void *)bus));
-  RPC_RETURN();
+  rpc_relay("bus_delete", ((void *)bus));
+  rpc_return();
 }
 
 struct args_bus_set_port {
@@ -130,11 +133,11 @@ static int impl_bus_set_port(struct spa_loop *, bool, uint32_t,
 
   return 0;
 }
-RPC_DEFN(bus_set_port, (struct bus *, bus), (size_t, idx), (char *, path)) {
-  RPC_BEGIN(data);
+RPC_DEFN(bus_set_port, (struct bus *, bus), (long, idx), (char *, path)) {
+  struct data *data = rpc_data();
   if (!strcmp(path, bus->port[idx])) {
     free(path);
-    RPC_RETURN();
+    rpc_return();
   }
 
   struct args_bus_set_port args = {
@@ -144,8 +147,8 @@ RPC_DEFN(bus_set_port, (struct bus *, bus), (size_t, idx), (char *, path)) {
   };
   pw_loop_invoke(pw_thread_loop_get_loop(data->thread_loop), impl_bus_set_port,
                  SPA_ID_INVALID, &args, sizeof args, false, data);
-  RPC_RELAY(bus_set_port, ((void *)bus), idx, path);
-  RPC_RETURN();
+  rpc_relay("bus_set_port", ((void *)bus), idx, path);
+  rpc_return();
 }
 
 struct args_bus_update_vol {
@@ -161,7 +164,7 @@ static int impl_bus_update_vol(struct spa_loop *, bool, uint32_t,
   return 0;
 }
 RPC_DEFN(bus_set_gain, (struct bus *, bus), (double, gain)) {
-  RPC_BEGIN(data);
+  struct data *data = rpc_data();
 
   bus->gain = fmax(gain, MIN_GAIN);
 
@@ -172,14 +175,14 @@ RPC_DEFN(bus_set_gain, (struct bus *, bus), (double, gain)) {
                  impl_bus_update_vol, SPA_ID_INVALID, &args, sizeof args, false,
                  nullptr);
 
-  RPC_RELAY(bus_set_gain, ((void *)bus), bus->gain);
+  rpc_relay("bus_set_gain", ((void *)bus), bus->gain);
   if (gain != bus->gain)
-    RPC_RETURN(bus->gain);
+    rpc_return(bus->gain);
   else
-    RPC_RETURN();
+    rpc_return();
 }
 RPC_DEFN(bus_set_balance, (struct bus *, bus), (double, balance)) {
-  RPC_BEGIN(data);
+  struct data *data = rpc_data();
 
   bus->balance = fmax(-MAX_BAL, fmin(MAX_BAL, balance));
 
@@ -190,9 +193,9 @@ RPC_DEFN(bus_set_balance, (struct bus *, bus), (double, balance)) {
                  impl_bus_update_vol, SPA_ID_INVALID, &args, sizeof args, false,
                  nullptr);
 
-  RPC_RELAY(bus_set_balance, ((void *)bus), bus->balance);
+  rpc_relay("bus_set_balance", ((void *)bus), bus->balance);
   if (balance != bus->balance)
-    RPC_RETURN(bus->balance);
+    rpc_return(bus->balance);
   else
-    RPC_RETURN();
+    rpc_return();
 }
