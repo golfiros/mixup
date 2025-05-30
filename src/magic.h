@@ -145,4 +145,6 @@
       DEFER(T)(OPT_REM_ENCLOSE(HEAD(__VA_ARGS__))))                            \
       EVAL##stack(FOR_EACH_MAP_NO_EVAL(T, TAIL(__VA_ARGS__)))
 
+#define UNIQUE(name) CAT(name##_, __LINE__)
+
 #endif

@@ -2,6 +2,7 @@
 #define __MIXUP_BUS_H__
 
 #include "mixup.h"
+#include <stdio.h>
 
 struct bus {
   char *port[2];

@@ -244,8 +244,8 @@ static struct mg_iobuf _rpc_vframe(const char *name, va_list *ap) {
   FILE *fp = fopencookie(&io, "w", (cookie_io_functions_t){.write = _write});
 
   void (*fn)(FILE *, va_list *) = va_arg(*ap, typeof(fn));
-  for (size_t count = 0; fn; fn = va_arg(*ap, typeof(fn)), count++) {
-    if (count)
+  for (size_t i = 0; fn; fn = va_arg(*ap, typeof(fn))) {
+    if (i++)
       fprintf(fp, ",");
     fn(fp, ap);
   }

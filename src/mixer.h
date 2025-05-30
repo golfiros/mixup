@@ -2,7 +2,6 @@
 #define __MIXUP_MIXER_H__
 
 #include "mixup.h"
-#include "rpc.h"
 
 struct mixer {
   struct port_data *port_data[2];
@@ -14,10 +13,10 @@ struct mixer {
   double master, *gain, *balance;
 };
 
-RPC_DECL(mixer_new);
-RPC_DECL(mixer_delete);
-RPC_DECL(mixer_set_port);
-RPC_DECL(mixer_set_gain);
-RPC_DECL(mixer_set_balance);
+void mixer_new(void *);
+void mixer_delete(void *);
+void mixer_set_port(void *);
+void mixer_set_gain(void *);
+void mixer_set_balance(void *);
 
 #endif

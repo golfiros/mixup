@@ -6,15 +6,12 @@
 #include <stddef.h>
 #include <stdio.h>
 
-struct srv;
-
 struct srv *srv_new();
 void srv_del(struct srv *);
 
 void srv_reg(struct srv *, void (*)(void *), const char *, void *);
 void srv_run(struct srv *);
 
-#define UNIQUE(name) CAT(name##_, __LINE__)
 #define RPC_FUNC_ARG(type, name) type name
 #define RPC_DECL_ARG(type, name) type name;
 bool _rpc_extract_str(void *, size_t, void *);
@@ -88,6 +85,7 @@ void print_obj(FILE *, va_list *);
 #define RPC_PRINT(arg)                                                         \
   _Generic(arg,                                                                \
       char *: print_str,                                                       \
+      const char *: print_str,                                                 \
       double: print_num,                                                       \
       bool: print_bool,                                                        \
       long: print_long,                                                        \
@@ -97,6 +95,7 @@ void print_obj(FILE *, va_list *);
 #define RPC_PRINT(arg)                                                         \
   _Generic(arg,                                                                \
       char *: print_str,                                                       \
+      const char *: print_str,                                                 \
       double: print_num,                                                       \
       bool: print_bool,                                                        \
       long: print_long,                                                        \
