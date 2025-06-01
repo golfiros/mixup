@@ -116,6 +116,7 @@ void _rpc_return(void *, ...);
     va_end(UNIQUE(args));                                                      \
     _rpc_return(UNIQUE(r), FOR_EACH_MAP(0, RPC_PRINT, __VA_ARGS__)             \
                                __VA_OPT__(, ) nullptr);                        \
+    return;                                                                    \
   } while (false)
 
 void _rpc_err(void *, int, const char *, ...);
@@ -126,6 +127,7 @@ void _rpc_err(void *, int, const char *, ...);
     void *UNIQUE(r) = va_arg(UNIQUE(args), typeof(UNIQUE(r)));                 \
     va_end(UNIQUE(args));                                                      \
     _rpc_err(UNIQUE(r), (code), (msg));                                        \
+    return;                                                                    \
   } while (false)
 
 void _rpc_reply(void *, const char *, ...);
