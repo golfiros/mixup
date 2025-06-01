@@ -13,11 +13,19 @@
 static void port_new(void *_data, struct port_info info) {
   struct data *data = _data;
   vec_foreach(bus, data->buses) {
-    for (size_t j = 0; j < 2; j++)
-      if (!strcmp(info.path, bus->port[j])) {
+    for (size_t i = 0; i < 2; i++)
+      if (!strcmp(info.path, bus->port[i])) {
         struct port *port = core_get_port(data->core, info.path);
         port_connect(port);
-        bus->port_data[j] = port_buf(port);
+        bus->port_data[i] = port_buf(port);
+      }
+  }
+  vec_foreach(mixer, data->mixers) {
+    for (size_t i = 0; i < 2; i++)
+      if (!strcmp(info.path, mixer->port[i])) {
+        struct port *port = core_get_port(data->core, info.path);
+        port_connect(port);
+        mixer->port_data[i] = port_buf(port);
       }
   }
   rpc_broadcast(data->srv, "port_new", info);
@@ -26,9 +34,14 @@ static void port_new(void *_data, struct port_info info) {
 static void port_delete(void *_data, const char *path) {
   struct data *data = _data;
   vec_foreach(bus, data->buses) {
-    for (size_t j = 0; j < 2; j++)
-      if (!strcmp(path, bus->port[j]))
-        bus->port_data[j] = nullptr;
+    for (size_t i = 0; i < 2; i++)
+      if (!strcmp(path, bus->port[i]))
+        bus->port_data[i] = nullptr;
+  }
+  vec_foreach(mixer, data->mixers) {
+    for (size_t i = 0; i < 2; i++)
+      if (!strcmp(path, mixer->port[i]))
+        mixer->port_data[i] = nullptr;
   }
   rpc_broadcast(data->srv, "port_delete", path);
 }
