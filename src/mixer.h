@@ -4,19 +4,38 @@
 #include "mixup.h"
 
 struct mixer {
-  struct port_data *port_data[2];
-  float2 *vols;
-
   char *port[2];
+  double master;
+  vec(struct channel *) channels;
 
-  vec(struct src) sources;
-  double master, *gain, *balance;
+  float **port_data[2];
+  float2 *buffer;
+  float2 ***sources;
+  float2 *vols;
 };
 
+void print_mixer(FILE *, va_list *);
+
+struct channel {
+  void *src;
+  double gain, balance;
+
+  struct mixer *mixer;
+  float2 **buffer;
+};
+
+void print_channel(FILE *, va_list *);
+
+// RPCs
 void mixer_new(void *);
 void mixer_delete(void *);
 void mixer_set_port(void *);
-void mixer_set_gain(void *);
-void mixer_set_balance(void *);
+void mixer_set_master(void *);
+
+void channel_new(void *);
+void channel_delete(void *);
+void channel_set_src(void *);
+void channel_set_gain(void *);
+void channel_set_balance(void *);
 
 #endif

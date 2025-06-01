@@ -6,10 +6,10 @@
 #include <stddef.h>
 #include <stdio.h>
 
-struct srv *srv_new();
+struct srv *srv_new(void *);
 void srv_del(struct srv *);
 
-void srv_reg(struct srv *, void (*)(void *), const char *, void *);
+void srv_reg(struct srv *, void (*)(void *), const char *);
 void srv_run(struct srv *);
 
 #define RPC_FUNC_ARG(type, name) type name
@@ -27,7 +27,7 @@ bool _rpc_extract_obj(void *, size_t, void *);
           bool: _rpc_extract_bool,                                             \
           long: _rpc_extract_long,                                             \
           void *: _rpc_extract_obj)(_r, idx, &(name))) {                       \
-    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
+    _rpc_err(_r, -32602, "\"Missing parameter " #name " of type " #type "\""); \
     return;                                                                    \
   }
 #else
@@ -39,7 +39,7 @@ bool _rpc_extract_obj(void *, size_t, void *);
           long: _rpc_extract_long,                                             \
           void *: _rpc_extract_obj,                                            \
           RPC_EXTRACT_TYPES)(_r, idx, &(name))) {                              \
-    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
+    _rpc_err(_r, -32602, "\"Missing parameter " #name " of type " #type "\""); \
     return;                                                                    \
   }
 #endif
@@ -103,6 +103,9 @@ void print_obj(FILE *, va_list *);
       RPC_PRINT_TYPES),                                                        \
       arg
 #endif
+
+void _fprint_arg(FILE *, void (*)(FILE *, va_list *), ...);
+#define fprint_arg(fp, arg) _fprint_arg((fp), RPC_PRINT(arg))
 
 void _rpc_return(void *, ...);
 #define rpc_return(...)                                                        \

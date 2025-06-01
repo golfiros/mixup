@@ -1,9 +1,13 @@
 #include "bus.h"
 #include "core.h"
+#include "mixer.h"
 #include "mixup.h"
 #include <string.h>
 
-#define RPC_PRINT_TYPES struct bus * : print_bus, struct port_info : print_port
+#define RPC_PRINT_TYPES                                                        \
+  struct bus * : print_bus,                                                    \
+                 struct mixer * : print_mixer,                                 \
+                                  struct port_info : print_port
 #include "rpc.h"
 
 static void port_new(void *_data, struct port_info info) {
@@ -37,7 +41,7 @@ static void process(void *_data) {
         bus->buffer[i][0] = (*bus->port_data[0])[i];
     else
       for (size_t i = 0; i < data->buffer_size; i++)
-        bus->buffer[i][0] = 0;
+        bus->buffer[i][0] = 0.0f;
     if (bus->port_data[1])
       for (size_t i = 0; i < data->buffer_size; i++)
         bus->buffer[i][1] = (*bus->port_data[1])[i];
@@ -47,12 +51,25 @@ static void process(void *_data) {
     for (size_t i = 0; i < data->buffer_size; i++)
       for (size_t j = 0; j < 2; j++)
         bus->buffer[i][j] *= bus->vol[j];
-    /*
-    for (size_t i = 0; i < 2; i++)
-      if (out[i])
-        for (size_t t = 0; t < buffer_size; t++)
-          out[i][t] += bus->buffer[t][i];
-    */
+  }
+  vec_foreach(mixer, data->mixers) {
+    for (size_t c = 0; c < mixer->channels.n; c++) {
+      if (mixer->sources[c])
+        for (size_t i = 0; i < data->buffer_size; i++)
+          for (size_t j = 0; j < 2; j++)
+            mixer->buffer[mixer->channels.n * i + c][j] =
+                (*mixer->sources[c])[i][j];
+      else
+        for (size_t i = 0; i < data->buffer_size; i++)
+          for (size_t j = 0; j < 2; j++)
+            mixer->buffer[mixer->channels.n * i + c][j] = 0.0f;
+    }
+    for (size_t i = 0; i < data->buffer_size; i++)
+      for (size_t c = 0; c < mixer->channels.n; c++)
+        for (size_t j = 0; j < 2; j++)
+          if (mixer->port_data[j])
+            (*mixer->port_data[j])[i] +=
+                mixer->vols[c][j] * mixer->buffer[mixer->channels.n * i + c][j];
   }
 }
 
@@ -61,6 +78,10 @@ static void buffer_size(void *_data, size_t buffer_size) {
   data->buffer_size = buffer_size;
   vec_foreach(bus, data->buses) {
     bus->buffer = realloc(bus->buffer, buffer_size * sizeof *bus->buffer);
+  }
+  vec_foreach(mixer, data->mixers) {
+    mixer->buffer = realloc(mixer->buffer, mixer->channels.n * buffer_size *
+                                               sizeof *mixer->buffer);
   }
 }
 static void sample_rate(void *_data, double sample_rate) {
@@ -81,6 +102,7 @@ RPC_DEFN(init) {
     port = next;
   }
   vec_foreach(bus, data->buses) { rpc_reply("bus_new", bus); }
+  vec_foreach(mixer, data->mixers) { rpc_reply("mixer_new", mixer); }
   rpc_return();
 }
 
@@ -90,6 +112,7 @@ int main(int, char **) {
   struct data data = {};
 
   vec_init(&data.buses);
+  vec_init(&data.mixers);
 
   if (!(data.core = core_new(&data, (struct core_events){
                                         .port_new = port_new,
@@ -101,18 +124,29 @@ int main(int, char **) {
     printf("Failed to initialize audio\n");
     goto err_core;
   }
-  if (!(data.srv = srv_new())) {
+  if (!(data.srv = srv_new(&data))) {
     printf("Failed to initialize server\n");
     goto err_srv;
   }
 
-  srv_reg(data.srv, init, "init", &data);
+  srv_reg(data.srv, init, "init");
 
-  srv_reg(data.srv, bus_new, "bus_new", &data);
-  srv_reg(data.srv, bus_delete, "bus_delete", &data);
-  srv_reg(data.srv, bus_set_port, "bus_set_port", &data);
-  srv_reg(data.srv, bus_set_gain, "bus_set_gain", &data);
-  srv_reg(data.srv, bus_set_balance, "bus_set_balance", &data);
+  srv_reg(data.srv, bus_new, "bus_new");
+  srv_reg(data.srv, bus_delete, "bus_delete");
+  srv_reg(data.srv, bus_set_port, "bus_set_port");
+  srv_reg(data.srv, bus_set_gain, "bus_set_gain");
+  srv_reg(data.srv, bus_set_balance, "bus_set_balance");
+
+  srv_reg(data.srv, mixer_new, "mixer_new");
+  srv_reg(data.srv, mixer_delete, "mixer_delete");
+  srv_reg(data.srv, mixer_set_port, "mixer_set_port");
+  srv_reg(data.srv, mixer_set_master, "mixer_set_master");
+
+  srv_reg(data.srv, channel_new, "channel_new");
+  srv_reg(data.srv, channel_delete, "channel_delete");
+  srv_reg(data.srv, channel_set_src, "channel_set_src");
+  srv_reg(data.srv, channel_set_gain, "channel_set_gain");
+  srv_reg(data.srv, channel_set_balance, "channel_set_balance");
 
   core_start(data.core);
 
@@ -127,6 +161,14 @@ int main(int, char **) {
 
 err_srv:
   srv_del(data.srv);
+
+  vec_foreach(mixer, data.mixers) {
+    for (size_t j = 0; j < 2; j++)
+      free(mixer->port[j]);
+    free(mixer->buffer);
+    free(mixer);
+  }
+  vec_free(&data.mixers);
 
   vec_foreach(bus, data.buses) {
     for (size_t j = 0; j < 2; j++)

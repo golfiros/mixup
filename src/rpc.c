@@ -16,6 +16,8 @@ struct srv {
   struct mg_iobuf queue[QUEUE_SIZE];
   atomic_size_t queue_head;
   atomic_size_t queue_tail;
+
+  void *data;
 };
 
 static void _srv_callback(struct mg_connection *c, int ev, void *ev_data) {
@@ -57,11 +59,11 @@ static void _srv_callback(struct mg_connection *c, int ev, void *ev_data) {
   }
 }
 
-struct srv *srv_new() {
+struct srv *srv_new(void *data) {
   struct srv *srv = malloc(sizeof *srv);
   if (!srv)
     return nullptr;
-  *srv = (typeof(*srv)){};
+  *srv = (typeof(*srv)){.data = data};
 
   atomic_init(&srv->queue_head, 0);
   atomic_init(&srv->queue_tail, 0);
@@ -83,9 +85,9 @@ void srv_del(struct srv *srv) {
   mg_rpc_del(&srv->rpc, nullptr);
 }
 
-void srv_reg(struct srv *srv, void(_fn)(void *), const char *name, void *data) {
+void srv_reg(struct srv *srv, void(_fn)(void *), const char *name) {
   void (*fn)(struct mg_rpc_req *) = (typeof(fn))_fn;
-  mg_rpc_add(&srv->rpc, mg_str(name), fn, data);
+  mg_rpc_add(&srv->rpc, mg_str(name), fn, srv->data);
 }
 
 void srv_run(struct srv *srv) {
@@ -192,6 +194,13 @@ void print_long(FILE *fp, va_list *ap) {
 void print_obj(FILE *fp, va_list *ap) {
   void *obj = va_arg(*ap, typeof(obj));
   fprintf(fp, "\"%p\"", obj);
+}
+
+void _fprint_arg(FILE *fp, void(fn)(FILE *, va_list *), ...) {
+  va_list args;
+  va_start(args);
+  fn(fp, &args);
+  va_end(args);
 }
 
 ssize_t _write(void *cookie, const char *buf, size_t size) {

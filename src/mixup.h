@@ -1,9 +1,9 @@
 #ifndef __MIXUP_MIXUP_H__
 #define __MIXUP_MIXUP_H__
 
-#define MIXUP "mixup"
-
 #include "vector.h"
+#include <math.h>
+#include <stdio.h>
 
 struct data {
   void *output[2];
@@ -20,12 +20,12 @@ struct data {
 
 typedef float float2[2];
 
-struct src {
-  enum {
-    MIXUP_SRC_NONE,
-    MIXUP_SRC_BUS,
-  } type;
-  void *ptr;
-};
+#define MIN_GAIN -90.0f
+#define MAX_BAL 100.0f
+#define DB_TO_AMP(db) ((db) > MIN_GAIN ? pow(10.0, 0.05 * (db)) : 0.0)
+#define PAN_LINL(bal) fminf(1.0, 1.0 - bus->balance / MAX_BAL)
+#define PAN_LINR(bal) fminf(1.0, 1.0 + bus->balance / MAX_BAL)
+#define PAN_POWL(bal) cos(0.25 * M_PI * (1.0 + channel->balance / MAX_BAL))
+#define PAN_POWR(bal) sin(0.25 * M_PI * (1.0 + channel->balance / MAX_BAL))
 
 #endif

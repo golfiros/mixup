@@ -1,6 +1,5 @@
 #include "bus.h"
 #include "core.h"
-#include <math.h>
 #include <string.h>
 
 #define RPC_EXTRACT_TYPES struct bus * : _rpc_extract_obj
@@ -14,17 +13,9 @@ void print_bus(FILE *fp, va_list *ap) {
           bus, bus->port[0], bus->port[1], bus->gain, bus->balance);
 }
 
-#define MIN_GAIN -90.0
-#define MAX_BAL 100.0
 static inline void bus_update_vol(struct bus *bus) {
-  double A = bus->gain > MIN_GAIN ? pow(10.0, 0.05 * bus->gain) : 0.0;
-  /*
-  double theta = 0.5 * M_PI * (1.0 + 0.5 * bus->balance / MAX_BAL);
-  bus->vol[0] = A * cos(theta);
-  bus->vol[1] = A * sin(theta);
-  */
-  bus->vol[0] = A * fminf(1.0, 1.0 - bus->balance / MAX_BAL);
-  bus->vol[1] = A * fminf(1.0, 1.0 + bus->balance / MAX_BAL);
+  bus->vol[0] = DB_TO_AMP(bus->gain) * PAN_LINL(bus->balance);
+  bus->vol[1] = DB_TO_AMP(bus->gain) * PAN_LINR(bus->balance);
 }
 
 #define PATH_NONE ""
@@ -64,7 +55,7 @@ CBK_DEFN(impl_bus_delete, (struct bus *, bus)) {
 }
 RPC_DEFN(bus_delete, (struct bus *, bus)) {
   struct data *data = rpc_data();
-  core_cbk(data->core, impl_bus_delete);
+  core_cbk(data->core, impl_bus_delete, bus);
   rpc_relay("bus_delete", ((void *)bus));
   rpc_return();
 }
@@ -102,7 +93,7 @@ CBK_DEFN(impl_bus_update_vol, (struct bus *, bus)) { bus_update_vol(bus); }
 RPC_DEFN(bus_set_gain, (struct bus *, bus), (double, gain)) {
   struct data *data = rpc_data();
   bus->gain = fmax(gain, MIN_GAIN);
-  core_cbk(data->core, impl_bus_update_vol);
+  core_cbk(data->core, impl_bus_update_vol, bus);
   rpc_relay("bus_set_gain", ((void *)bus), bus->gain);
   if (gain != bus->gain)
     rpc_return(bus->gain);
@@ -112,7 +103,7 @@ RPC_DEFN(bus_set_gain, (struct bus *, bus), (double, gain)) {
 RPC_DEFN(bus_set_balance, (struct bus *, bus), (double, balance)) {
   struct data *data = rpc_data();
   bus->balance = fmax(-MAX_BAL, fmin(MAX_BAL, balance));
-  core_cbk(data->core, impl_bus_update_vol);
+  core_cbk(data->core, impl_bus_update_vol, bus);
   rpc_relay("bus_set_balance", ((void *)bus), bus->balance);
   if (balance != bus->balance)
     rpc_return(bus->balance);

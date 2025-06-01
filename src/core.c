@@ -7,7 +7,6 @@
 
 struct core {
   bool quit;
-  // void *output[2];
 
   struct pw_thread_loop *thread_loop;
   struct pw_filter *filter;
@@ -92,15 +91,6 @@ static void _process(void *_data, struct spa_io_position *pos) {
           (*port.buf)[t] = 0.0f;
     }
   }
-  /*
-  float *out[2];
-  for (size_t i = 0; i < 2; i++) {
-    out[i] = pw_filter_get_dsp_buffer(core->output[i], buffer_size);
-    if (out[i])
-      for (size_t t = 0; t < buffer_size; t++)
-        out[i][t] = 0.0;
-  }
-  */
   if (buffer_size != core->buffer_size) {
     core->buffer_size = buffer_size;
     core->event = core->event | CORE_EVENT_BUFFER_SIZE;
@@ -232,15 +222,6 @@ struct core *core_new(void *data, struct core_events ev) {
     free(core);
     return nullptr;
   }
-
-  /*
-  for (size_t i = 0; i < 2; i++)
-    core->output[i] = pw_filter_add_port(
-        core->filter, PW_DIRECTION_OUTPUT, PW_FILTER_PORT_FLAG_MAP_BUFFERS, 0,
-        pw_properties_new(PW_KEY_FORMAT_DSP, "32 bit float mono audio",
-                          nullptr),
-        nullptr, 0);
-  */
 
   if (pw_filter_connect(core->filter, PW_FILTER_FLAG_RT_PROCESS, nullptr, 0) <
           0 ||
