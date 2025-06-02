@@ -1,23 +1,23 @@
-#include "bus.h"
 #include "core.h"
+#include "input.h"
 #include "mixer.h"
 #include "mixup.h"
 #include <string.h>
 
 #define RPC_PRINT_TYPES                                                        \
-  struct bus * : print_bus,                                                    \
-                 struct mixer * : print_mixer,                                 \
-                                  struct port_info : print_port
+  struct input * : print_input,                                                \
+                   struct mixer * : print_mixer,                               \
+                                    struct port_info : print_port
 #include "rpc.h"
 
 static void port_new(void *_data, struct port_info info) {
   struct data *data = _data;
-  vec_foreach(bus, data->buses) {
+  vec_foreach(input, data->inputs) {
     for (size_t i = 0; i < 2; i++)
-      if (!strcmp(info.path, bus->port[i])) {
+      if (!strcmp(info.path, input->port[i])) {
         struct port *port = core_get_port(data->core, info.path);
         port_connect(port);
-        bus->port_data[i] = port_buf(port);
+        input->port_data[i] = port_buf(port);
       }
   }
   vec_foreach(mixer, data->mixers) {
@@ -33,10 +33,10 @@ static void port_new(void *_data, struct port_info info) {
 
 static void port_delete(void *_data, const char *path) {
   struct data *data = _data;
-  vec_foreach(bus, data->buses) {
+  vec_foreach(input, data->inputs) {
     for (size_t i = 0; i < 2; i++)
-      if (!strcmp(path, bus->port[i]))
-        bus->port_data[i] = nullptr;
+      if (!strcmp(path, input->port[i]))
+        input->port_data[i] = nullptr;
   }
   vec_foreach(mixer, data->mixers) {
     for (size_t i = 0; i < 2; i++)
@@ -48,22 +48,22 @@ static void port_delete(void *_data, const char *path) {
 
 static void process(void *_data) {
   struct data *data = _data;
-  vec_foreach(bus, data->buses) {
-    if (bus->port_data[0])
+  vec_foreach(input, data->inputs) {
+    if (input->port_data[0])
       for (size_t i = 0; i < data->buffer_size; i++)
-        bus->buffer[i][0] = (*bus->port_data[0])[i];
+        input->buffer[i][0] = (*input->port_data[0])[i];
     else
       for (size_t i = 0; i < data->buffer_size; i++)
-        bus->buffer[i][0] = 0.0f;
-    if (bus->port_data[1])
+        input->buffer[i][0] = 0.0f;
+    if (input->port_data[1])
       for (size_t i = 0; i < data->buffer_size; i++)
-        bus->buffer[i][1] = (*bus->port_data[1])[i];
+        input->buffer[i][1] = (*input->port_data[1])[i];
     else
       for (size_t i = 0; i < data->buffer_size; i++)
-        bus->buffer[i][1] = bus->buffer[i][0];
+        input->buffer[i][1] = input->buffer[i][0];
     for (size_t i = 0; i < data->buffer_size; i++)
       for (size_t j = 0; j < 2; j++)
-        bus->buffer[i][j] *= bus->vol[j];
+        input->buffer[i][j] *= input->vol[j];
   }
   vec_foreach(mixer, data->mixers) {
     for (size_t c = 0; c < mixer->channels.n; c++) {
@@ -89,8 +89,8 @@ static void process(void *_data) {
 static void buffer_size(void *_data, size_t buffer_size) {
   struct data *data = _data;
   data->buffer_size = buffer_size;
-  vec_foreach(bus, data->buses) {
-    bus->buffer = realloc(bus->buffer, buffer_size * sizeof *bus->buffer);
+  vec_foreach(input, data->inputs) {
+    input->buffer = realloc(input->buffer, buffer_size * sizeof *input->buffer);
   }
   vec_foreach(mixer, data->mixers) {
     mixer->buffer = realloc(mixer->buffer, mixer->channels.n * buffer_size *
@@ -114,7 +114,7 @@ RPC_DEFN(init) {
     free(port);
     port = next;
   }
-  vec_foreach(bus, data->buses) { rpc_reply("bus_new", bus); }
+  vec_foreach(input, data->inputs) { rpc_reply("input_new", input); }
   vec_foreach(mixer, data->mixers) { rpc_reply("mixer_new", mixer); }
   rpc_return();
 }
@@ -124,7 +124,7 @@ int main(int, char **) {
 
   struct data data = {};
 
-  vec_init(&data.buses);
+  vec_init(&data.inputs);
   vec_init(&data.mixers);
 
   if (!(data.core = core_new(&data, (struct core_events){
@@ -144,11 +144,11 @@ int main(int, char **) {
 
   srv_reg(data.srv, init, "init");
 
-  srv_reg(data.srv, bus_new, "bus_new");
-  srv_reg(data.srv, bus_delete, "bus_delete");
-  srv_reg(data.srv, bus_set_port, "bus_set_port");
-  srv_reg(data.srv, bus_set_gain, "bus_set_gain");
-  srv_reg(data.srv, bus_set_balance, "bus_set_balance");
+  srv_reg(data.srv, input_new, "input_new");
+  srv_reg(data.srv, input_delete, "input_delete");
+  srv_reg(data.srv, input_set_port, "input_set_port");
+  srv_reg(data.srv, input_set_gain, "input_set_gain");
+  srv_reg(data.srv, input_set_balance, "input_set_balance");
 
   srv_reg(data.srv, mixer_new, "mixer_new");
   srv_reg(data.srv, mixer_delete, "mixer_delete");
@@ -183,13 +183,13 @@ err_srv:
   }
   vec_free(&data.mixers);
 
-  vec_foreach(bus, data.buses) {
+  vec_foreach(input, data.inputs) {
     for (size_t j = 0; j < 2; j++)
-      free(bus->port[j]);
-    free(bus->buffer);
-    free(bus);
+      free(input->port[j]);
+    free(input->buffer);
+    free(input);
   }
-  vec_free(&data.buses);
+  vec_free(&data.inputs);
 
 err_core:
   core_del(data.core);

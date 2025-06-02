@@ -1,6 +1,6 @@
 #include "mixer.h"
-#include "bus.h"
 #include "core.h"
+#include "input.h"
 #include "vector.h"
 #include <string.h>
 
@@ -168,9 +168,9 @@ CBK_DEFN(impl_channel_set_src, (struct channel *, channel)) {
   struct data *data = cbk_data();
   struct mixer *mixer = channel->mixer;
   size_t c = vec_idx(mixer->channels, == channel);
-  if (vec_idx(data->buses, == channel->src) < data->buses.n) {
-    struct bus *bus = channel->src;
-    mixer->sources[c] = &bus->buffer;
+  if (vec_idx(data->inputs, == channel->src) < data->inputs.n) {
+    struct input *input = channel->src;
+    mixer->sources[c] = &input->buffer;
   }
 }
 RPC_DEFN(channel_set_src, (struct channel *, channel), (void *, src)) {

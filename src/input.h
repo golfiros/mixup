@@ -4,7 +4,7 @@
 #include "mixup.h"
 #include <stdio.h>
 
-struct bus {
+struct input {
   char *port[2];
   double gain, balance;
 
@@ -13,13 +13,13 @@ struct bus {
   float2 vol;
 };
 
-void print_bus(FILE *, va_list *);
+void print_input(FILE *, va_list *);
 
 // RPCs
-void bus_new(void *);
-void bus_delete(void *);
-void bus_set_port(void *);
-void bus_set_gain(void *);
-void bus_set_balance(void *);
+void input_new(void *);
+void input_delete(void *);
+void input_set_port(void *);
+void input_set_gain(void *);
+void input_set_balance(void *);
 
 #endif

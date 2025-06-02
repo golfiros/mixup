@@ -1,4 +1,7 @@
-export const mixer = (map, mixers, rpc) => {
+export const mixer = (data) => {
+  const map = data.obj_map;
+  const mixers = data.mixers = [];
+  const rpc = data.rpc;
   const channel_setup = (mixer, channel) => {
     const id = channel.id;
     channel.id = () => id;

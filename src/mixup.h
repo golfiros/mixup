@@ -14,7 +14,7 @@ struct data {
   size_t buffer_size;
   double sample_rate;
 
-  vec(struct bus *) buses;
+  vec(struct input *) inputs;
   vec(struct mixer *) mixers;
 };
 
@@ -23,9 +23,9 @@ typedef float float2[2];
 #define MIN_GAIN -90.0f
 #define MAX_BAL 100.0f
 #define DB_TO_AMP(db) ((db) > MIN_GAIN ? pow(10.0, 0.05 * (db)) : 0.0)
-#define PAN_LINL(bal) fminf(1.0, 1.0 - bus->balance / MAX_BAL)
-#define PAN_LINR(bal) fminf(1.0, 1.0 + bus->balance / MAX_BAL)
-#define PAN_POWL(bal) cos(0.25 * M_PI * (1.0 + channel->balance / MAX_BAL))
-#define PAN_POWR(bal) sin(0.25 * M_PI * (1.0 + channel->balance / MAX_BAL))
+#define PAN_LINL(bal) fminf(1.0, 1.0 - (bal) / MAX_BAL)
+#define PAN_LINR(bal) fminf(1.0, 1.0 + (bal) / MAX_BAL)
+#define PAN_POWL(bal) cos(0.25 * M_PI * (1.0 + (bal) / MAX_BAL))
+#define PAN_POWR(bal) sin(0.25 * M_PI * (1.0 + (bal) / MAX_BAL))
 
 #endif

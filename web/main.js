@@ -1,24 +1,20 @@
 import { jsonrpc } from "/rpc.js";
-import { bus } from "/bus.js";
+import { input } from "/input.js";
 import { mixer } from "/mixer.js";
 
+const data = window.data = {};
 const ws_url =
   window.location.protocol.replace("http", "ws") +
   "//" + window.location.host + "/rpc";
-const rpc = jsonrpc(ws_url);
-window.rpc = rpc;
+data.rpc = jsonrpc(ws_url);
 
-const ports = {};
-rpc.register("port_new", (path, props) => ports[path] = props);
-rpc.register("port_delete", (path) => delete ports[path]);
-window.ports = ports;
+const ports = data.ports = {};
+data.rpc.register("port_new", (path, props) => ports[path] = props);
+data.rpc.register("port_delete", (path) => delete ports[path]);
 
-window.obj_map = {};
+data.obj_map = {};
+window.input_new = input(data);
+window.mixer_new = mixer(data);
 
-window.buses = [];
-window.bus_new = bus(window.obj_map, window.buses, rpc);
 
-window.mixers = [];
-window.mixer_new = mixer(window.obj_map, window.mixers, rpc);
-
-rpc.init();
+data.rpc.init();
