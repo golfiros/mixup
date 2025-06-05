@@ -90,6 +90,7 @@ RPC_DEFN(input_set_port, (struct input *, input), (long, idx), (char *, path)) {
     rpc_return();
   }
   core_cbk(data->core, impl_input_set_port, input, idx, path);
+  rpc_relay("input_set_port", ((void *)input), idx, path);
   rpc_return();
 }
 

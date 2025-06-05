@@ -281,7 +281,7 @@ bool core_quit(struct core *core) { return core->quit; }
 
 void print_port(FILE *fp, va_list *ap) {
   struct port_info port = va_arg(*ap, typeof(port));
-  fprintf(fp, "{\"path\":\"%s\",\"node\":\"%s\",\"input\":\"%s\"}", port.path,
+  fprintf(fp, "{\"path\":\"%s\",\"node\":\"%s\",\"input\":%s}", port.path,
           port.node, port.input ? "true" : "false");
 }
 

@@ -106,6 +106,7 @@ RPC_DEFN(mixer_set_port, (struct mixer *, mixer), (long, idx), (char *, path)) {
     rpc_return();
   }
   core_cbk(data->core, impl_mixer_set_port, mixer, idx, path);
+  rpc_relay("mixer_set_port", ((void *)mixer), idx, path);
   rpc_return();
 }
 
@@ -141,7 +142,10 @@ CBK_DEFN(impl_channel_new, (struct channel *, channel)) {
 RPC_DEFN(channel_new, (struct mixer *, mixer)) {
   struct data *data = rpc_data();
   struct channel *channel = malloc(sizeof *channel);
-  *channel = (typeof(*channel)){.mixer = mixer};
+  *channel = (typeof(*channel)){
+      .gain = MIN_GAIN,
+      .mixer = mixer,
+  };
   core_cbk(data->core, impl_channel_new, channel);
   rpc_relay("channel_new", mixer, channel);
   rpc_return(channel);
@@ -160,7 +164,7 @@ RPC_DEFN(channel_delete, (struct channel *, channel)) {
   struct data *data = rpc_data();
   struct mixer *mixer = channel->mixer;
   core_cbk(data->core, impl_channel_delete, channel);
-  rpc_relay("channel_delete", mixer, ((void *)channel));
+  rpc_relay("channel_delete", ((void *)channel));
   rpc_return();
 }
 
