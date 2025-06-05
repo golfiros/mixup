@@ -1,6 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-<title>Mixup</title>
-<script src="/main.js" type="module"></script>
+
+<head>
+  <title>Mixup</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: monospace;
+    }
+
+    body,
+    html {
+      height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <select id="input_ports">
+    <option value="">select input</option>
+  </select>
+  <select id="output_ports">
+    <option value="">select output</option>
+  </select>
+  <select id="src_list">
+    <option value="(nil)">select src</option>
+    <optgroup label="inputs" id="input_grp"></optgroup>
+  </select>
+  <div id="input_list"></div>
+  <button id="input_new">new input</button>
+  <div id="mixer_list"></div>
+  <button id="mixer_new">new mixer</button>
+</body>
+
+<script src="/rpc.js" type="module"></script>
+<script src="/ports.js" type="module"></script>
+<script src="/input.js" type="module"></script>
+<script src="/mixer.js" type="module"></script>
+<script type="module">rpc.init()</script>
 
 </html>
