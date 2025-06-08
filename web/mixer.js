@@ -42,8 +42,11 @@ const impl_channel_new = (id, props) => {
   const src_observer = new MutationObserver(() => {
     if (!document.contains(channel))
       src_observer.disconnect();
-    else
+    else {
+      const val = src.value;
       src.innerHTML = src_list.innerHTML;
+      src.value = val;
+    }
   });
   src_observer.observe(src_list, { childList: true, subtree: true });
   src.value = props.src;
@@ -129,8 +132,11 @@ const impl_mixer_new = (props) => {
     const port_observer = new MutationObserver(() => {
       if (!document.contains(mixer))
         port_observer.disconnect();
-      else
-        port.innerHTML = output_ports.innerHTML;
+      else {
+        const val = port.value;
+        port.innerHTML = input_ports.innerHTML;
+        port.value = val;
+      }
     });
     port_observer.observe(output_ports, { childList: true, subtree: true });
 

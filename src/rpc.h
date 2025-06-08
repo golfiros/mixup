@@ -27,7 +27,7 @@ bool _rpc_extract_obj(void *, size_t, void *);
           bool: _rpc_extract_bool,                                             \
           long: _rpc_extract_long,                                             \
           void *: _rpc_extract_obj)(_r, idx, &(name))) {                       \
-    _rpc_err(_r, -32602, "\"Missing parameter " #name " of type " #type "\""); \
+    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
     return;                                                                    \
   }
 #else
@@ -39,7 +39,7 @@ bool _rpc_extract_obj(void *, size_t, void *);
           long: _rpc_extract_long,                                             \
           void *: _rpc_extract_obj,                                            \
           RPC_EXTRACT_TYPES)(_r, idx, &(name))) {                              \
-    _rpc_err(_r, -32602, "\"Missing parameter " #name " of type " #type "\""); \
+    _rpc_err(_r, -32602, "Missing parameter " #name " of type " #type);        \
     return;                                                                    \
   }
 #endif
@@ -119,7 +119,7 @@ void _rpc_return(void *, ...);
     return;                                                                    \
   } while (false)
 
-void _rpc_err(void *, int, const char *, ...);
+void _rpc_err(void *, int, const char *);
 #define rpc_err(code, msg)                                                     \
   do {                                                                         \
     va_list UNIQUE(args);                                                      \

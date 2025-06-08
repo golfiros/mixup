@@ -7,7 +7,7 @@ DIR_SRC := src
 DIR_GUARD = mkdir -p $(@D)
 
 CC := clang
-LIBS := -lm -lmongoose
+LIBS := -lm -lmongoose -luuid
 PKG_CONFIG := libpipewire-0.3
 CFLAGS := -g -O0 -Wextra -std=gnu23
 DEFNS := 

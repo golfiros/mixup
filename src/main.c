@@ -1,5 +1,6 @@
 #include "core.h"
 #include "input.h"
+#include "map.h"
 #include "mixer.h"
 #include "mixup.h"
 #include <string.h>
@@ -124,9 +125,6 @@ int main(int, char **) {
 
   struct data data = {};
 
-  vec_init(&data.inputs);
-  vec_init(&data.mixers);
-
   if (!(data.core = core_new(&data, (struct core_events){
                                         .port_new = port_new,
                                         .port_delete = port_delete,
@@ -161,6 +159,11 @@ int main(int, char **) {
   srv_reg(data.srv, channel_set_gain, "channel_set_gain");
   srv_reg(data.srv, channel_set_balance, "channel_set_balance");
 
+  data.map = map_new(sizeof(struct obj));
+
+  vec_init(&data.inputs);
+  vec_init(&data.mixers);
+
   core_start(data.core);
 
   printf("Welcome to mixup!\n");
@@ -190,6 +193,8 @@ err_srv:
     free(input);
   }
   vec_free(&data.inputs);
+
+  map_delete(data.map);
 
 err_core:
   core_del(data.core);

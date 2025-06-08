@@ -233,12 +233,9 @@ void _rpc_return(void *_r, ...) {
   va_end(args);
 }
 
-void _rpc_err(void *_r, int c, const char *m, ...) {
+void _rpc_err(void *_r, int c, const char *m) {
   struct mg_rpc_req *r = _r;
-  va_list args;
-  va_start(args);
-  mg_rpc_verr(r, c, m, &args);
-  va_end(args);
+  mg_rpc_err(r, c, "%m", MG_ESC(m));
 }
 
 static struct mg_iobuf _rpc_vframe(const char *name, va_list *ap) {

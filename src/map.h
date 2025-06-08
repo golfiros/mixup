@@ -1,19 +1,17 @@
 #ifndef __MIXUP_MAP_H__
 #define __MIXUP_MAP_H__
 
-#include "vector.h"
+#include <stddef.h>
 
-#define map(keytype, valuetype)                                                \
-  struct {                                                                     \
-    vec(struct {                                                               \
-      keytype key;                                                             \
-      valuetype val;                                                           \
-    }) _vec;                                                                   \
-    int(_cmp)(const void *, const void *);                                     \
-  }
+#define MAP_ID_NULL "00000000-0000-0000-0000-000000000000"
 
-#define map_init(map, cmp)                                                     \
-  vec_init((map)._vec);                                                        \
-  (map)._cmp = (cmp);
+struct map *map_new(size_t);
+void map_delete(struct map *);
+
+char *map_insert(struct map *, const void *);
+
+// void *map_add(struct map *, const char *, const void *);
+void *map_get(struct map *, const char *);
+void map_remove(struct map *, const char *);
 
 #endif // !__MIXUP_MAP_H__

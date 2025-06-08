@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 struct input {
+  char *id;
   char *port[2];
   double gain, balance;
 

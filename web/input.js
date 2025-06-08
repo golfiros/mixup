@@ -60,8 +60,11 @@ const impl_input_new = (props) => {
     const observer = new MutationObserver(() => {
       if (!document.contains(input))
         observer.disconnect();
-      else
+      else {
+        const val = port.value;
         port.innerHTML = input_ports.innerHTML;
+        port.value = val;
+      }
     });
     observer.observe(input_ports, { childList: true, subtree: true });
 
@@ -93,9 +96,9 @@ const impl_input_new = (props) => {
   balance.type = "range";
   balance.min = -100;
   balance.max = 100;
-  balance.value = props.gain;
+  balance.value = props.balance;
   balance.oninput = balance.onchange = () =>
-    rpc.input_set_gain(props.id, Number(balance.value))
+    rpc.input_set_balance(props.id, Number(balance.value))
       .then((res) => {
         if (res !== null)
           balance.value = res;

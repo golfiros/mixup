@@ -4,6 +4,7 @@
 #include "mixup.h"
 
 struct mixer {
+  char *id;
   char *port[2];
   double master;
   vec(struct channel *) channels;
@@ -17,7 +18,8 @@ struct mixer {
 void print_mixer(FILE *, va_list *);
 
 struct channel {
-  void *src;
+  char *id;
+  char *src;
   double gain, balance;
 
   struct mixer *mixer;

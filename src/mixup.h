@@ -5,6 +5,15 @@
 #include <math.h>
 #include <stdio.h>
 
+struct obj {
+  enum {
+    MIXUP_INPUT,
+    MIXUP_MIXER,
+    MIXUP_CHANNEL,
+  } type;
+  void *ptr;
+};
+
 struct data {
   void *output[2];
 
@@ -13,6 +22,8 @@ struct data {
 
   size_t buffer_size;
   double sample_rate;
+
+  struct map *map;
 
   vec(struct input *) inputs;
   vec(struct mixer *) mixers;
