@@ -154,7 +154,8 @@ static void _global(void *_data, uint32_t id, uint32_t, const char *type,
       }
       if (i == core->nodes.n)
         break;
-      name = realloc(name, strlen(value) + strlen(" (XXX)") + 1);
+      if (!mult)
+        name = realloc(name, strlen(value) + strlen(" (XXX)") + 1);
       sprintf(name, "%s (%lu)", value, ++mult);
     }
 
@@ -166,9 +167,6 @@ static void _global(void *_data, uint32_t id, uint32_t, const char *type,
     vec_push(&core->nodes, node);
     vec_qsort(&core->nodes, node_cmp);
     qsort(core->nodes.data, core->nodes.n, sizeof node, node_cmp);
-    printf("node %d:\n", id);
-    const struct spa_dict_item *item;
-    spa_dict_for_each(item, props) printf("\t%s: %s\n", item->key, item->value);
   } else if (!strcmp(type, PW_TYPE_INTERFACE_Port)) {
     uint32_t node_id;
     struct node *node;
