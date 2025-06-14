@@ -1,7 +1,6 @@
 const src_list = document.getElementById("src_list");
 
 const impl_channel_new = (id, props) => {
-  console.log(props);
   const channels = document.getElementById(`${id}_channels`);
 
   const channel = document.createElement("div");
@@ -59,7 +58,7 @@ const impl_channel_new = (id, props) => {
 
   gain.id = `${props.id}_gain`;
   gain.type = "range";
-  gain.min = -90;
+  gain.min = -60;
   gain.max = 6;
   gain.value = props.gain;
   gain.oninput = gain.onchange = () =>
@@ -144,6 +143,16 @@ const impl_mixer_new = (props) => {
     port.value = props.port[idx];
     port.onchange = () =>
       rpc.mixer_set_port(props.id, idx, port.value);
+    port.onfocus = () => [...port.childNodes]
+      .filter((e) => e instanceof HTMLOptGroupElement)
+      .forEach((group) => [...group.childNodes]
+        .forEach((node) => node.label = node.getAttribute("open_name"))
+      );
+    port.onblur = () => [...port.childNodes]
+      .filter((e) => e instanceof HTMLOptGroupElement)
+      .forEach((group) => [...group.childNodes]
+        .forEach((node) => node.label = node.innerHTML)
+      );
   }
 
   const channels = document.createElement("div");
@@ -164,7 +173,7 @@ const impl_mixer_new = (props) => {
 
   master.id = `${props.id}_master`;
   master.type = "range";
-  master.min = -90;
+  master.min = -60;
   master.max = 6;
   master.value = props.master;
   master.oninput = master.onchange = () =>

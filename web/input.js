@@ -57,21 +57,31 @@ const impl_input_new = (props) => {
     ports.appendChild(port);
     port.id = `${props.id}_port_${i}`;
     port.innerHTML = input_ports.innerHTML;
-    const observer = new MutationObserver(() => {
+    const port_observer = new MutationObserver(() => {
       if (!document.contains(input))
-        observer.disconnect();
+        port_observer.disconnect();
       else {
         const val = port.value;
         port.innerHTML = input_ports.innerHTML;
         port.value = val;
       }
     });
-    observer.observe(input_ports, { childList: true, subtree: true });
+    port_observer.observe(input_ports, { childList: true, subtree: true });
 
     const idx = i;
     port.value = props.port[idx];
     port.onchange = () =>
       rpc.input_set_port(props.id, idx, port.value);
+    port.onfocus = () => [...port.childNodes]
+      .filter((e) => e instanceof HTMLOptGroupElement)
+      .forEach((group) => [...group.childNodes]
+        .forEach((node) => node.label = node.getAttribute("open_name"))
+      );
+    port.onblur = () => [...port.childNodes]
+      .filter((e) => e instanceof HTMLOptGroupElement)
+      .forEach((group) => [...group.childNodes]
+        .forEach((node) => node.label = node.innerHTML)
+      );
   }
 
   const gain = document.createElement("input");

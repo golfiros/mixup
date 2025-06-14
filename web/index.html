@@ -18,13 +18,13 @@
 </head>
 
 <body>
-  <select id="input_ports">
+  <select id="input_ports" hidden>
     <option value="">select input</option>
   </select>
-  <select id="output_ports">
+  <select id="output_ports" hidden>
     <option value="">select output</option>
   </select>
-  <select id="src_list">
+  <select id="src_list" hidden>
     <option value="00000000-0000-0000-0000-000000000000">select src</option>
     <optgroup label="inputs" id="input_grp"></optgroup>
   </select>
@@ -38,6 +38,8 @@
 <script src="/ports.js" type="module"></script>
 <script src="/input.js" type="module"></script>
 <script src="/mixer.js" type="module"></script>
-<script type="module">rpc.init()</script>
+<script type="module">
+  rpc.init();
+</script>
 
 </html>
