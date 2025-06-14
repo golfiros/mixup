@@ -1,6 +1,8 @@
 #include "core.h"
+#include "spa/utils/dict.h"
 #include "vector.h"
 #include <pipewire/pipewire.h>
+#include <stdio.h>
 #include <string.h>
 
 #define MIXUP "mixup"
@@ -34,6 +36,7 @@ struct core {
 struct node {
   uint32_t id;
   char *name;
+  bool input;
 };
 static int node_cmp(const void *_n1, const void *_n2) {
   const struct node *n1 = _n1, *n2 = _n2;
@@ -122,25 +125,59 @@ static void _global(void *_data, uint32_t id, uint32_t, const char *type,
   struct core *core = _data;
   const char *value;
   if (!strcmp(type, PW_TYPE_INTERFACE_Node)) {
+
+    if (!(value = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS)))
+      return;
+
+    bool input = false;
+    char *class = strdup(value);
+    for (char *s = strtok(class, "/"); s; s = strtok(nullptr, "/")) {
+      if (!strcmp(s, "Internal")) {
+        free(class);
+        return;
+      }
+      input = input || !strcmp(s, "Source") || !strcmp(s, "Output");
+    }
+    free(class);
+
     if (!(value = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION)))
       value = spa_dict_lookup(props, PW_KEY_NODE_NAME);
 
+    char *name = strdup(value);
+    size_t mult = 0;
+    while (true) {
+      size_t i;
+      for (i = 0; i < core->nodes.n; i++) {
+        struct node node = core->nodes.data[i];
+        if (!strcmp(node.name, name) && node.input == input)
+          break;
+      }
+      if (i == core->nodes.n)
+        break;
+      name = realloc(name, strlen(value) + strlen(" (XXX)") + 1);
+      sprintf(name, "%s (%lu)", value, ++mult);
+    }
+
     struct node node = {
         .id = id,
-        .name = strdup(value),
+        .name = name,
+        .input = input,
     };
     vec_push(&core->nodes, node);
     vec_qsort(&core->nodes, node_cmp);
     qsort(core->nodes.data, core->nodes.n, sizeof node, node_cmp);
+    printf("node %d:\n", id);
+    const struct spa_dict_item *item;
+    spa_dict_for_each(item, props) printf("\t%s: %s\n", item->key, item->value);
   } else if (!strcmp(type, PW_TYPE_INTERFACE_Port)) {
     uint32_t node_id;
+    struct node *node;
     if (!(value = spa_dict_lookup(props, PW_KEY_NODE_ID)) ||
         (node_id = atoi(value)) == core->filter_id ||
+        !(node = vec_bsearch_ref(core->nodes, node_cmp, .id = node_id)) ||
         ((value = spa_dict_lookup(props, PW_KEY_PORT_MONITOR)) &&
          !strcmp(value, "true")))
       return;
-
-    struct node node = vec_bsearch(core->nodes, node_cmp, .id = node_id);
 
     if (!(value = spa_dict_lookup(props, PW_KEY_FORMAT_DSP)) ||
         !strstr(value, "audio"))
@@ -155,7 +192,7 @@ static void _global(void *_data, uint32_t id, uint32_t, const char *type,
     struct port port = {
         .path = strdup(path),
         .id = id,
-        .node = node.name,
+        .node = node->name,
         .input = input,
         .core = core,
     };
@@ -164,7 +201,7 @@ static void _global(void *_data, uint32_t id, uint32_t, const char *type,
 
     core->ev.port_new(core->data, (struct port_info){
                                       .path = strdup(path),
-                                      .node = strdup(node.name),
+                                      .node = strdup(node->name),
                                       .input = input,
                                   });
   }
