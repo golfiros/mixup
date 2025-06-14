@@ -50,13 +50,13 @@ static void port_delete(void *_data, const char *path) {
 static void process(void *_data) {
   struct data *data = _data;
   vec_foreach(input, data->inputs) {
-    if (input->port_data[0])
+    if (input->port_data[0] && *input->port_data[0])
       for (size_t i = 0; i < data->buffer_size; i++)
         input->buffer[i][0] = (*input->port_data[0])[i];
     else
       for (size_t i = 0; i < data->buffer_size; i++)
         input->buffer[i][0] = 0.0f;
-    if (input->port_data[1])
+    if (input->port_data[1] && *input->port_data[1])
       for (size_t i = 0; i < data->buffer_size; i++)
         input->buffer[i][1] = (*input->port_data[1])[i];
     else

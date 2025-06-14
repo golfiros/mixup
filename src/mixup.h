@@ -31,7 +31,7 @@ struct data {
 
 typedef float float2[2];
 
-#define MIN_GAIN -90.0f
+#define MIN_GAIN -60.0f
 #define MAX_BAL 100.0f
 #define DB_TO_AMP(db) ((db) > MIN_GAIN ? pow(10.0, 0.05 * (db)) : 0.0)
 #define PAN_LINL(bal) fminf(1.0, 1.0 - (bal) / MAX_BAL)
