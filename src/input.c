@@ -8,7 +8,7 @@
 
 #define RPC_EXTRACT_TYPES struct input * : _rpc_extract_obj
 #define RPC_PRINT_TYPES struct input * : print_input
-#include "rpc.h"
+#include "server.h"
 
 void print_input(FILE *fp, va_list *ap) {
   struct input *input = va_arg(*ap, typeof(input));

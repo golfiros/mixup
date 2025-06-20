@@ -7,7 +7,7 @@
 
 #define RPC_PRINT_TYPES                                                        \
   struct mixer * : print_mixer, struct channel * : print_channel
-#include "rpc.h"
+#include "server.h"
 
 void print_mixer(FILE *fp, va_list *ap) {
   struct mixer *mixer = va_arg(*ap, typeof(mixer));

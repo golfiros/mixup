@@ -1,4 +1,4 @@
-#include "rpc.h"
+#include "server.h"
 
 #include <mongoose.h>
 #include <stdatomic.h>

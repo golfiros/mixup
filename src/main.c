@@ -9,7 +9,7 @@
   struct input * : print_input,                                                \
                    struct mixer * : print_mixer,                               \
                                     struct port_info : print_port
-#include "rpc.h"
+#include "server.h"
 
 static void port_new(void *_data, struct port_info info) {
   struct data *data = _data;
