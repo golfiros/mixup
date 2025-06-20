@@ -3,26 +3,22 @@ const output_ports = document.getElementById("output_ports");
 
 rpc.register("port_new", (props) => {
   const list = props.input ? input_ports : output_ports;
-  var group = list.querySelector(`optgroup[label="${props.node}"]`);
+  var group = list.querySelector(`div[title="${props.node}"]`);
   if (group === null) {
-    group = document.createElement("optgroup");
-    group.label = props.node;
+    group = document.createElement("div");
+    group.title = props.node;
     list.appendChild(group);
     [...list.childNodes]
-      .filter((e) => e instanceof HTMLOptGroupElement)
-      .sort((a, b) => a.label > b.label ? 1 : -1)
+      .sort((a, b) => a.title > b.title ? 1 : -1)
       .forEach((node) => list.appendChild(node));
-
   }
-  const port = document.createElement("option");
-  port.value = port.id = props.path;
+  const port = document.createElement("div");
+  port.id = props.path;
   group.appendChild(port);
   [...group.childNodes]
-    .sort((a, b) => a.value > b.value ? 1 : -1)
+    .sort((a, b) => a.id > b.id ? 1 : -1)
     .forEach((node, idx) => {
-      const name = props.input ? `Input ${idx + 1}` : `Output ${idx + 1}`;
-      node.setAttribute("open_name", name);
-      node.innerHTML = `${name} - ${group.label}`;
+      node.innerHTML = props.input ? `input ${idx + 1}` : `output ${idx + 1}`;
       group.appendChild(node);
     });
 });

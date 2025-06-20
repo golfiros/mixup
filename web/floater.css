@@ -1,0 +1,53 @@
+.floater-frame {
+  position: fixed;
+  z-index:1000;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition: visibility 0.3s, opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+.floater-frame.active {
+  opacity: 1;
+  visibility: visible;
+  transition: visibility 0.3s, opacity 0.3s ease-in-out;
+  pointer-events: auto;
+}
+
+.floater-border {
+  position: fixed;
+  top: 3vh;
+  right: 3vh;
+  height: calc(100% - 6vh);
+  width: calc(100% - 6vh);
+  border: 0.7vh solid var(--color-hl1);
+  border-radius: 1.4vh;
+  background: var(--color-bg);
+}
+
+.floater-header {
+  display: flex;
+  height: 6%;
+  justify-content: space-between;
+  background: var(--color-hl1);
+}
+.floater-header div {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding-left: 3%;
+}
+.floater-header button {
+  aspect-ratio: 1 / 1;
+  background: var(--color-hl1);
+}
+
+.floater-content {
+  height: 94%;
+  width: 100%;
+  overflow: hidden;
+}
+

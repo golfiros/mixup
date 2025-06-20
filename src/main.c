@@ -117,6 +117,7 @@ RPC_DEFN(init) {
   }
   vec_foreach(input, data->inputs) { rpc_reply("input_new", input); }
   vec_foreach(mixer, data->mixers) { rpc_reply("mixer_new", mixer); }
+  rpc_reply("done");
   rpc_return();
 }
 
