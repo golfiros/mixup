@@ -1,0 +1,50 @@
+.mixer {
+  display: flex;
+  height: calc(8 * 100% / 9);
+  width: 100%;
+}
+
+.mixer-ports {
+  display: flex;
+  height: 30%;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+.mixer-port-select {
+  padding-left: calc(3% / 0.82);
+  padding-right: calc(3% / 0.82);
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  background: transparent;
+  text-align: left;
+}
+.mixer-port-select div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis "...";
+}
+
+.mixer-port-list {
+  overflow-y: auto;
+}
+.mixer-port-list div {
+  padding-left: 3%;
+  height: 4%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+.mixer-port-list button {
+  padding-left: 8%;
+  text-align: left;
+  height: 8%;
+  width: 100%;
+  background: transparent;
+}
+.mixer-port-list button.active {
+  background: var(--color-hl2);
+}

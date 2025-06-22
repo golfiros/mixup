@@ -91,7 +91,7 @@ const impl_input_new = (props) => {
   list_elem.appendChild(list_label);
   list_label.classList.add("vertical-menu-item");
   list_label.onclick = () => {
-    localStorage.setItem("selected", props.id);
+    localStorage.setItem("input", props.id);
     refresh();
   };
 
@@ -265,8 +265,8 @@ const impl_input_new = (props) => {
   }
 };
 
-const input_new = document.getElementById("input_new");
-input_new.onclick = () => rpc.input_new().then(impl_input_new);
+const mixer_new = document.getElementById("input_new");
+mixer_new.onclick = () => rpc.input_new().then(impl_input_new);
 
 rpc.register("input_new", impl_input_new);
 rpc.register("input_delete", (id) => {

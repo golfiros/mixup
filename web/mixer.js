@@ -84,77 +84,146 @@ const impl_channel_new = (id, props) => {
       });
 };
 
-const mixer_list = document.getElementById("mixer_list");
-const input_new = document.getElementById("mixer_new");
+const impl_mixer_set_port = (id, idx, path) => {
+  const node_div = document.getElementById(`${id}_port_${idx}_node`);
+  const path_div = document.getElementById(`${id}_port_${idx}_path`);
+  const port = document.getElementById(path);
+  if (path === "") {
+    node_div.innerHTML = "no sink";
+    path_div.innerHTML = `select output ${idx ? "R" : "L"}`;
+  } else {
+    if (port === null) {
+      node_div.innerHTML = "unknown sink";
+      node_div.innerHTML = "unknown output";
+    } else {
+      node_div.innerHTML = port.parentNode.title;
+      path_div.innerHTML = port.innerHTML;
+    }
+  }
+  [...document.getElementById(`${id}_port_${idx}`).childNodes]
+    .filter((node) => node instanceof HTMLButtonElement)
+    .forEach((node) => node.classList.remove("active"));
+  document.getElementById(`${id}_port_${idx}_${path}`).classList.add("active");
+}
 
 const output_ports = document.getElementById("output_ports");
+const update_port = (id, idx) => {
+  const port = document.getElementById(`${id}_port_${idx}`);
+  port.innerHTML = "";
 
+  const button = document.createElement("button");
+  port.appendChild(button);
+  button.id = `${id}_port_${idx}_`;
+  button.innerHTML = "no sink";
+  button.onclick = () => {
+    rpc.mixer_set_port(id, idx, "");
+    impl_mixer_set_port(id, idx, "");
+    history.back();
+  }
+
+  [...output_ports.childNodes].forEach((group) => {
+    const node = document.createElement("div");
+    port.appendChild(node);
+    node.innerHTML = group.title;
+
+    [...group.childNodes].forEach((elem, i) => {
+      const path = elem.id, button = document.createElement("button");
+      port.appendChild(button);
+      button.id = `${id}_port_${idx}_${path}`;
+      button.innerHTML = `output ${i + 1}`;
+      button.onclick = () => {
+        rpc.mixer_set_port(id, idx, path);
+        impl_mixer_set_port(id, idx, path);
+        history.back();
+      };
+    })
+  });
+}
+
+const mixer_list = document.getElementById("mixer_list");
 const impl_mixer_new = (props) => {
+  const list_elem = document.createElement("li");
+  list_elem.id = `${props.id}_elem`;
+
+  const list_label = document.createElement("button");
+  list_elem.appendChild(list_label);
+  list_label.classList.add("vertical-menu-item");
+  list_label.onclick = () => {
+    localStorage.setItem("mixer", props.id);
+    refresh();
+  };
+
+  const delete_button = document.createElement("button");
+  list_elem.appendChild(delete_button);
+  delete_button.classList.add("delete-btn");
+  delete_button.innerHTML = "delete";
+  delete_button.onclick = () => {
+    rpc.mixer_delete(props.id);
+    list_elem.remove();
+    mixer.remove();
+    refresh();
+  };
+
   const mixer = document.createElement("div");
+  document.getElementById("content").appendChild(mixer);
+  mixer.hidden = true;
   mixer.id = props.id;
   mixer.name = "# mixer";
+  mixer.classList.add("content-inner");
 
   const label = document.createElement("div");
   mixer.appendChild(label);
+  label.classList.add("content-title");
 
   const label_observer = new MutationObserver(() => {
     if (!document.contains(mixer))
       label_observer.disconnect();
     else {
-      const idx = Array.from(mixer_list.childNodes).indexOf(mixer);
-      label.innerHTML = mixer.name.replace("#", idx + 1);
+      const idx = [...mixer_list.childNodes].indexOf(list_elem);
+      const name = mixer.name.replace("#", idx + 1);
+      list_label.innerHTML = label.innerHTML = name;
     }
   });
   label_observer.observe(mixer_list, { childList: true });
 
-  mixer_list.appendChild(mixer);
+  mixer_list.appendChild(list_elem);
 
-  const delete_button = document.createElement("button");
-  mixer.appendChild(delete_button);
-
-  delete_button.innerHTML = "delete";
-  delete_button.onclick = () => {
-    if (!confirm("confirm delete"))
-      return;
-    rpc.mixer_delete(props.id);
-    mixer.remove();
-  };
+  const menu = document.createElement("div");
+  mixer.appendChild(menu);
+  menu.classList.add("mixer");
 
   const ports = document.createElement("div");
-  mixer.appendChild(ports);
+  menu.appendChild(ports);
+  ports.classList.add("mixer-ports");
 
   for (var i = 0; i < 2; i++) {
-    const port = document.createElement("select");
-    ports.appendChild(port);
-    port.id = `${props.id}_port_${i}`;
-    port.innerHTML = output_ports.innerHTML;
+    const idx = i;
+
+    const port_button = document.createElement("button")
+    ports.appendChild(port_button);
+    port_button.classList.add("mixer-port-select");
+    port_button.innerHTML =
+      `<div id="${props.id}_port_${idx}_node"></div>` +
+      `<div id="${props.id}_port_${idx}_path"></div>`;
+
+    const port_floater = floater_new(`${props.id}_port_${idx}`);
+    ports.appendChild(port_floater.frame);
+    port_floater.content.classList.add("mixer-port-list");
+    port_button.onclick = port_floater.show;
+    port_floater.title = `select output ${idx ? "R" : "L"}`;
+    update_port(props.id, idx);
+    impl_mixer_set_port(props.id, idx, props.port[idx]);
+
     const port_observer = new MutationObserver(() => {
       if (!document.contains(mixer))
         port_observer.disconnect();
-      else {
-        const val = port.value;
-        port.innerHTML = input_ports.innerHTML;
-        port.value = val;
-      }
+      else
+        update_port(props.id, idx);
     });
-    port_observer.observe(output_ports, { childList: true, subtree: true });
-
-    const idx = i;
-    port.value = props.port[idx];
-    port.onchange = () =>
-      rpc.mixer_set_port(props.id, idx, port.value);
-    port.onfocus = () => [...port.childNodes]
-      .filter((e) => e instanceof HTMLOptGroupElement)
-      .forEach((group) => [...group.childNodes]
-        .forEach((node) => node.label = node.getAttribute("open_name"))
-      );
-    port.onblur = () => [...port.childNodes]
-      .filter((e) => e instanceof HTMLOptGroupElement)
-      .forEach((group) => [...group.childNodes]
-        .forEach((node) => node.label = node.innerHTML)
-      );
+    port_observer.observe(output_ports, { childList: true });
   }
 
+  /*
   const channels = document.createElement("div");
   mixer.appendChild(channels);
 
@@ -182,19 +251,22 @@ const impl_mixer_new = (props) => {
         if (res !== null)
           master.value = res;
       });
+  */
 };
 
-input_new.onclick = () => rpc.mixer_new().then(impl_mixer_new);
+const mixer_new = document.getElementById("mixer_new");
+mixer_new.onclick = () => rpc.mixer_new().then(impl_mixer_new);
 
 rpc.register("mixer_new", impl_mixer_new);
 rpc.register("mixer_delete", (id) => {
+  const elem = document.getElementById(`${id}_elem`);
+  elem.remove();
   const mixer = document.getElementById(id);
   mixer.remove();
+  refresh();
 });
-rpc.register("mixer_set_port", (id, idx, path) => {
-  const port = document.getElementById(`${id}_port_${idx}`);
-  port.value = path;
-});
+rpc.register("mixer_set_port", impl_mixer_set_port);
+/*
 rpc.register("mixer_set_master", (id, val) => {
   const master = document.getElementById(`${id}_master`);
   master.value = val;
@@ -217,3 +289,4 @@ rpc.register("channel_set_balance", (id, val) => {
   const balance = document.getElementById(`${id}_balance`);
   balance.value = val;
 });
+*/

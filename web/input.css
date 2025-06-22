@@ -12,7 +12,7 @@
 
 .input-ports {
   display: flex;
-  height: 35%;
+  height: 30%;
   flex-direction: column;
   justify-content: space-evenly;
 }

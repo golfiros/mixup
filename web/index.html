@@ -11,6 +11,7 @@
       --color-hl1: #312f2d;
       --color-hl2: #3a3835;
     }
+
     * {
       box-sizing: border-box;
       font-family: monospace;
@@ -33,28 +34,33 @@
       height: 40%;
       background: var(--color-bg);
     }
+
     .vertical-menu-title {
       display: flex;
       height: 15%;
       justify-content: space-between;
       background: var(--color-hl0);
     }
+
     .vertical-menu-title div {
       display: flex;
       height: 100%;
       align-items: center;
       padding-left: 3%;
     }
+
     .vertical-menu-title button {
       aspect-ratio: 1 / 1;
       background: var(--color-hl0);
     }
+
     .vertical-menu ul {
       list-style: none;
       width: 100%;
       height: 85%;
       overflow-y: auto;
     }
+
     .vertical-menu li {
       position: relative;
       overflow: hidden;
@@ -62,6 +68,7 @@
       height: 18%;
       background: var(--color-bg);
     }
+
     .vertical-menu-item {
       position: relative;
       transition: transform 0.1s ease;
@@ -73,12 +80,14 @@
       text-align: left;
       padding-left: 3%;
     }
+
     .vertical-menu-item.active {
       background: var(--color-hl2);
     }
+
     .delete-btn {
       position: absolute;
-      top: 1px; 
+      top: 1px;
       left: 0;
       height: calc(100% - 2px);
       width: 40%;
@@ -88,11 +97,13 @@
     #content {
       height: 54%;
     }
+
     .content-inner {
       height: 100%;
       width: 100%;
       background: var(--color-bg);
     }
+
     .content-title {
       display: flex;
       align-items: center;
@@ -103,17 +114,23 @@
     }
 
     #nav {
-      display:flex;
+      display: flex;
       justify-content: space-evenly;
       height: 6%;
     }
+
     #nav button {
       width: 100%;
       background: var(--color-hl0);
     }
+
+    #nav button.active {
+      background: var(--color-hl2);
+    }
   </style>
   <link rel="stylesheet" href="floater.css">
   <link rel="stylesheet" href="input.css">
+  <link rel="stylesheet" href="mixer.css">
 </head>
 
 <body>
@@ -123,16 +140,16 @@
     <option value="00000000-0000-0000-0000-000000000000">select src</option>
     <optgroup label="inputs" id="input_grp"></optgroup>
   </select>
-  <div class="vertical-menu">
+  <div class="vertical-menu" id="input_menu" hidden>
     <div class="vertical-menu-title">
-      <div >inputs</div>
+      <div>inputs</div>
       <button id="input_new">+</button>
     </div>
     <ul id="input_list"></ul>
   </div>
-  <div class="vertical-menu" hidden>
+  <div class="vertical-menu" id="mixer_menu" hidden>
     <div class="vertical-menu-title">
-      <div >mixers</div>
+      <div>mixers</div>
       <button id="mixer_new">+</button>
     </div>
     <ul id="mixer_list"></ul>
@@ -143,8 +160,8 @@
     </div>
   </div>
   <div id="nav">
-    <button id="show_inputs">inputs</button>
-    <button id="show_mixers">mixers</button>
+    <button id="input_nav">inputs</button>
+    <button id="mixer_nav">mixers</button>
   </div>
 </body>
 
@@ -154,12 +171,47 @@
 <script src="/input.js" type="module"></script>
 <script src="/mixer.js" type="module"></script>
 <script type="module">
-  ["input_list"].forEach((id) => {
-    const list = document.getElementById(id);
+  const refresh = window.refresh = () => {
+    [...document.getElementById("content").childNodes].forEach((node) => {
+      node.hidden = true;
+      document.getElementById(`${node.id}_elem`)?.childNodes[0].classList.remove("active");
+    });
+
+    var type = localStorage.getItem("selected");
+    if (type === null)
+      localStorage.setItem("selected", type = "input");
+
+    ["input", "mixer"].forEach((type) => {
+      document.getElementById(`${type}_nav`).classList.remove("active")
+      document.getElementById(`${type}_menu`).hidden = true;
+    });
+    document.getElementById(`${type}_nav`).classList.add("active");
+    document.getElementById(`${type}_menu`).hidden = false;
+
+    const id = localStorage.getItem(type);
+    var selected;
+    if (id && (selected = document.getElementById(id))) {
+      selected.hidden = false;
+      document.getElementById(`${id}_elem`).childNodes[0].classList.add("active");
+    }
+    else {
+      document.getElementById("content_empty").hidden = false;
+      localStorage.setItem(type, "");
+    }
+  }
+  ["input", "mixer"].forEach((type) => {
+    const type_str = type;
+    document.getElementById(`${type}_nav`).onclick = () => {
+      localStorage.setItem("selected", type);
+      refresh();
+    };
+    const list = document.getElementById(`${type}_list`);
     var x, x0, y, y0, t0;
     var drag = false, swipe = false;
     var item = null;
     list.ontouchstart = (ev) => {
+      if (ev.target.classList.contains("delete-btn"))
+        return;
       x = x0 = ev.touches[0].clientX;
       y = y0 = ev.touches[0].clientY;
       t0 = Date.now();
@@ -189,7 +241,7 @@
         ev.preventDefault();
         item.style.transform = `translateX(${dx > 0 ? Math.min(dx, 0.4 * list.offsetWidth) : 0}px)`;
       }
-    }, { passive: false });
+    }, {passive: false});
     list.ontouchend = () => {
       if (!item)
         return;
@@ -207,22 +259,6 @@
       swipe = false;
     };
   });
-  const refresh = window.refresh = () => {
-    [...document.getElementById("content").childNodes].forEach((node) => {
-      node.hidden = true;
-      document.getElementById(`${node.id}_elem`)?.childNodes[0].classList.remove("active");
-    });
-    const id = localStorage.getItem("selected");
-    var selected;
-    if (id && (selected = document.getElementById(id))) {
-      selected.hidden = false;
-      document.getElementById(`${id}_elem`).childNodes[0].classList.add("active");
-    }
-    else {
-      document.getElementById("content_empty").hidden = false;
-      localStorage.setItem("selected", "");
-    }
-  }
 
   rpc.register("done", () => {
     refresh();
