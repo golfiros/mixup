@@ -1,4 +1,12 @@
-const src_list = document.getElementById("src_list");
+const update_vol = (vol) => {
+  const end = 100 * (parseFloat(vol.value) + 60) / (6 + 60);
+  vol.style.background = `linear-gradient(to top,
+    #12a119 0%,
+    #12a119 ${end}%,
+    var(--color-bg) ${end}%,
+    var(--color-bg) 100%)`;
+  //document.getElementById(`${vol.id}_val`).innerHTML = `${parseFloat(vol.value).toFixed(1)}dB`;
+}
 
 const impl_channel_new = (id, props) => {
   const channels = document.getElementById(`${id}_channels`);
@@ -155,7 +163,7 @@ const impl_mixer_new = (props) => {
 
   const delete_button = document.createElement("button");
   list_elem.appendChild(delete_button);
-  delete_button.classList.add("delete-btn");
+  delete_button.classList.add("vertical-menu-delete");
   delete_button.innerHTML = "delete";
   delete_button.onclick = () => {
     rpc.mixer_delete(props.id);
@@ -169,7 +177,7 @@ const impl_mixer_new = (props) => {
   mixer.hidden = true;
   mixer.id = props.id;
   mixer.name = "# mixer";
-  mixer.classList.add("content-inner");
+  mixer.classList.add("content");
 
   const label = document.createElement("div");
   mixer.appendChild(label);
@@ -190,25 +198,26 @@ const impl_mixer_new = (props) => {
 
   const menu = document.createElement("div");
   mixer.appendChild(menu);
+  menu.classList.add("content-inner");
   menu.classList.add("mixer");
 
   const ports = document.createElement("div");
   menu.appendChild(ports);
-  ports.classList.add("mixer-ports");
+  ports.classList.add("ports");
 
   for (var i = 0; i < 2; i++) {
     const idx = i;
 
     const port_button = document.createElement("button")
     ports.appendChild(port_button);
-    port_button.classList.add("mixer-port-select");
+    port_button.classList.add("port-select");
     port_button.innerHTML =
       `<div id="${props.id}_port_${idx}_node"></div>` +
       `<div id="${props.id}_port_${idx}_path"></div>`;
 
     const port_floater = floater_new(`${props.id}_port_${idx}`);
     ports.appendChild(port_floater.frame);
-    port_floater.content.classList.add("mixer-port-list");
+    port_floater.content.classList.add("port-list");
     port_button.onclick = port_floater.show;
     port_floater.title = `select output ${idx ? "R" : "L"}`;
     update_port(props.id, idx);
@@ -223,6 +232,58 @@ const impl_mixer_new = (props) => {
     port_observer.observe(output_ports, { childList: true });
   }
 
+  const console = document.createElement("div");
+  menu.appendChild(console);
+  console.classList.add("mixer-console");
+
+  const channels = document.createElement("div");
+  console.appendChild(channels);
+  channels.id = `${props.id}_channels`;
+  channels.classList.add("mixer-channels");
+
+  const master_ch = document.createElement("div");
+  console.appendChild(master_ch);
+  master_ch.classList.add("mixer-master");
+
+  const master_div = document.createElement("div");
+  master_ch.appendChild(master_div);
+  master_div.classList.add("mixer-channel-vol");
+
+  const master_ruler = document.createElement("div");
+  master_div.appendChild(master_ruler);
+  master_ruler.classList.add("mixer-channel-ruler");
+  for (var i = 0; i < 12; i++)
+    master_ruler.appendChild(document.createElement("div"));
+
+  const master_vol = document.createElement("input");
+  master_div.appendChild(master_vol);
+  master_vol.classList.add("mixer-channel-slider");
+
+  master_vol.id = `${props.id}_master`;
+  master_vol.type = "range";
+  master_vol.min = -60;
+  master_vol.max = 6;
+  master_vol.value = props.master;
+  update_vol(master_vol);
+  master_vol.oninput = master_vol.onchange = () => {
+    rpc.mixer_set_master(props.id, Number(master_vol.value))
+      .then((res) => {
+        if (res !== null)
+          master_vol.value = res;
+      });
+    update_vol(master_vol);
+  }
+
+  const new_channel = document.createElement("button");
+  master_ch.appendChild(new_channel);
+  new_channel.classList.add("mixer-channel-new");
+  new_channel.innerHTML = "+";
+
+  const master_label = document.createElement("div");
+  master_ch.appendChild(master_label);
+  master_label.classList.add("mixer-channel-label");
+  master_label.innerHTML = "master";
+
   /*
   const channels = document.createElement("div");
   mixer.appendChild(channels);
@@ -236,21 +297,6 @@ const impl_mixer_new = (props) => {
 
   channel_new.innerHTML = "new channel";
   channel_new.onclick = () => rpc.channel_new(props.id).then((ch) => impl_channel_new(props.id, ch));
-
-  const master = document.createElement("input");
-  mixer.appendChild(master);
-
-  master.id = `${props.id}_master`;
-  master.type = "range";
-  master.min = -60;
-  master.max = 6;
-  master.value = props.master;
-  master.oninput = master.onchange = () =>
-    rpc.mixer_set_master(props.id, Number(master.value))
-      .then((res) => {
-        if (res !== null)
-          master.value = res;
-      });
   */
 };
 
@@ -266,12 +312,13 @@ rpc.register("mixer_delete", (id) => {
   refresh();
 });
 rpc.register("mixer_set_port", impl_mixer_set_port);
-/*
 rpc.register("mixer_set_master", (id, val) => {
   const master = document.getElementById(`${id}_master`);
   master.value = val;
+  update_vol(master);
 });
 
+/*
 rpc.register("channel_new", impl_channel_new);
 rpc.register("channel_delete", (id) => {
   const channel = document.getElementById(id);

@@ -1,50 +1,90 @@
 .mixer {
   display: flex;
-  height: calc(8 * 100% / 9);
-  width: 100%;
+  flex-direction: column;
 }
 
-.mixer-ports {
+.mixer-console {
   display: flex;
-  height: 30%;
+  height: 82%;
   width: 100%;
-  flex-direction: column;
-  justify-content: space-evenly;
 }
-.mixer-port-select {
-  padding-left: calc(3% / 0.82);
-  padding-right: calc(3% / 0.82);
+.mixer-channels {
+  height: 100%;
+  width: 82%;
+}
+.mixer-channel, 
+.mixer-master {
+  position: relative;
+  height: 100%;
+}
+.mixer-master {
+  width: calc(100% * var(--fader-width));
+}
+
+.mixer-channel-vol {
+  position: relative;
+  height: 75%;
+  width: 100%;
+}
+.mixer-channel-slider {
   height: 100%;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  background: transparent;
-  text-align: left;
+  direction: rtl;
+  writing-mode: vertical-lr;
 }
-.mixer-port-select div {
+.mixer-channel-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 0;
+  width: 0;
+  background: transparent;
+  border: none;
+}
+.mixer-channel-slider::-moz-range-thumb {
+  height: 0;
+  width: 0;
+  background: transparent;
+  border: none;
+}
+.mixer-channel-slider::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.mixer-channel-slider::-moz-range-track {
+  background: transparent;
+}
+
+.mixer-channel-ruler {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 30%;
+}
+.mixer-channel-ruler div {
+  height: 2px;
+  width: 100%;
+  background: white;
+}
+
+.mixer-channel-new {
+  height: 12.5%;
+  width: 100%;
+  background: var(--color-hl0);
+}
+
+.mixer-channel-label {
+  height: 12.5%;
+  width: 100%;
+  background: var(--color-hl0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis "...";
-}
-
-.mixer-port-list {
-  overflow-y: auto;
-}
-.mixer-port-list div {
-  padding-left: 3%;
-  height: 4%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-.mixer-port-list button {
-  padding-left: 8%;
-  text-align: left;
-  height: 8%;
-  width: 100%;
-  background: transparent;
-}
-.mixer-port-list button.active {
-  background: var(--color-hl2);
 }

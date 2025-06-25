@@ -10,6 +10,15 @@
       --color-hl0: #282725;
       --color-hl1: #312f2d;
       --color-hl2: #3a3835;
+      --color-red: #e74c3c;
+
+      --padding-width: 0.03;
+
+      --title-height: 0.06;
+
+      --vertical-menu-height: 0.35;
+
+      --fader-width: 0.18;
     }
 
     * {
@@ -30,45 +39,39 @@
     }
 
     .vertical-menu {
+      height: calc(100% * var(--vertical-menu-height));
       width: 100%;
-      height: 40%;
       background: var(--color-bg);
     }
-
     .vertical-menu-title {
       display: flex;
-      height: 15%;
+      height: calc(100% * var(--title-height) / var(--vertical-menu-height));
       justify-content: space-between;
       background: var(--color-hl0);
     }
-
     .vertical-menu-title div {
       display: flex;
       height: 100%;
       align-items: center;
-      padding-left: 3%;
+      padding-left: calc(100% * var(--padding-width));
     }
-
     .vertical-menu-title button {
       aspect-ratio: 1 / 1;
       background: var(--color-hl0);
     }
-
     .vertical-menu ul {
       list-style: none;
       width: 100%;
-      height: 85%;
+      height: calc(100% * (1 - var(--title-height) / var(--vertical-menu-height)));
       overflow-y: auto;
     }
-
     .vertical-menu li {
       position: relative;
       overflow: hidden;
       width: 100%;
-      height: 18%;
+      height: 22%;
       background: var(--color-bg);
     }
-
     .vertical-menu-item {
       position: relative;
       transition: transform 0.1s ease;
@@ -78,53 +81,96 @@
       user-select: none;
       background: var(--color-bg);
       text-align: left;
-      padding-left: 3%;
+      padding-left: calc(100% * var(--padding-width));
     }
-
     .vertical-menu-item.active {
       background: var(--color-hl2);
     }
-
-    .delete-btn {
+    .vertical-menu-delete {
       position: absolute;
       top: 1px;
       left: 0;
       height: calc(100% - 2px);
       width: 40%;
-      background: #e74c3c;
+      background: var(--color-red);
     }
 
     #content {
-      height: 54%;
+      height: calc(100% * (1 - var(--vertical-menu-height) - var(--title-height)));
     }
-
-    .content-inner {
+    .content {
       height: 100%;
       width: 100%;
       background: var(--color-bg);
     }
-
+    .content-inner {
+      height: calc(100% * (1 - var(--vertical-menu-height) - 2 * var(--title-height)) / 
+                  (1 - var(--vertical-menu-height) - var(--title-height)));
+      width: 100%;
+    }
     .content-title {
       display: flex;
       align-items: center;
-      padding-left: 3%;
-      height: calc(100% / 9);
+      padding-left: calc(100% * var(--padding-width));
+      height: calc(100% * var(--title-height) / (1 - var(--vertical-menu-height) - var(--title-height)));
       width: 100%;
       background: var(--color-hl0);
     }
 
-    #nav {
+    .nav {
       display: flex;
       justify-content: space-evenly;
-      height: 6%;
+      height: calc(100% * var(--title-height));
     }
-
-    #nav button {
+    .nav button {
       width: 100%;
       background: var(--color-hl0);
     }
+    .nav button.active {
+      background: var(--color-hl2);
+    }
 
-    #nav button.active {
+    .ports {
+      display: flex;
+      height: 18%;
+      width: 100%;
+      justify-content: space-evenly;
+    }
+    .port-select {
+      padding-left: calc(100% * var(--padding-width));
+      padding-right: calc(100% * var(--padding-width));
+      height: 100%;
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      background: transparent;
+      text-align: left;
+    }
+    .port-select div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis "...";
+    }
+
+    .port-list {
+      overflow-y: auto;
+    }
+    .port-list div {
+      padding-left: calc(100% * var(--padding-width));
+      height: 4%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .port-list button {
+      padding-left: 8%;
+      text-align: left;
+      height: 8%;
+      width: 100%;
+      background: transparent;
+    }
+    .port-list button.active {
       background: var(--color-hl2);
     }
   </style>
@@ -155,11 +201,12 @@
     <ul id="mixer_list"></ul>
   </div>
   <div id="content">
-    <div id="content_empty" class="content-inner" hidden>
+    <div id="content_empty" class="content" hidden>
       <div class=content-title>select element...</div>
+      <div class=content></div>
     </div>
   </div>
-  <div id="nav">
+  <div class="nav">
     <button id="input_nav">inputs</button>
     <button id="mixer_nav">mixers</button>
   </div>
@@ -200,7 +247,6 @@
     }
   }
   ["input", "mixer"].forEach((type) => {
-    const type_str = type;
     document.getElementById(`${type}_nav`).onclick = () => {
       localStorage.setItem("selected", type);
       refresh();
@@ -210,7 +256,7 @@
     var drag = false, swipe = false;
     var item = null;
     list.ontouchstart = (ev) => {
-      if (ev.target.classList.contains("delete-btn"))
+      if (ev.target.classList.contains("vertical-menu-delete"))
         return;
       x = x0 = ev.touches[0].clientX;
       y = y0 = ev.touches[0].clientY;
@@ -250,7 +296,7 @@
 
       const dx = x - x0;
 
-      if (swipe && dx > 40)
+      if (swipe && dx > 0.2 * list.offsetWidth)
         item.style.transform = `translateX(${0.4 * list.offsetWidth}px)`;
       else
         item.style.transform = `translateX(0)`;

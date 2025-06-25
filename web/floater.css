@@ -30,7 +30,7 @@
 
 .floater-header {
   display: flex;
-  height: 6%;
+  height: calc(100% * var(--title-height));
   justify-content: space-between;
   background: var(--color-hl1);
 }
@@ -46,7 +46,7 @@
 }
 
 .floater-content {
-  height: 94%;
+  height: calc(100% * (1 - var(--title-height)));
   width: 100%;
   overflow: hidden;
 }

@@ -1,69 +1,29 @@
 .input {
   display: flex;
-  height: calc(8 * 100% / 9);
+  flex-direction: column;
+}
+
+.input-controls {
+  display: flex;
+  height: 82%;
   width: 100%;
 }
 
 .input-left {
   height: 100%;
   width: 82%;
-  overflow: hidden;
-}
-
-.input-ports {
-  display: flex;
-  height: 30%;
-  flex-direction: column;
-  justify-content: space-evenly;
-}
-.input-port-select {
-  padding-left: calc(3% / 0.82);
-  padding-right: calc(3% / 0.82);
-  height: 100%;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-evenly;
-  background: transparent;
-  text-align: left;
-}
-.input-port-select div {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis "...";
-}
-
-.input-port-list {
-  overflow-y: auto;
-}
-.input-port-list div {
-  padding-left: 3%;
-  height: 4%;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
-.input-port-list button {
-  padding-left: 8%;
-  text-align: left;
-  height: 8%;
-  width: 100%;
-  background: transparent;
-}
-.input-port-list button.active {
-  background: var(--color-hl2);
 }
 
 .input-gain {
   position: relative;
   height: 100%;
-  width: 18%;
+  width: calc(100% * var(--fader-width));
 }
 .input-balance {
   position: relative;
   height: 20%;
-  left: calc(3% / 0.82);
-  width: calc(100% - 2 * 3% / 0.82);
+  left: calc(3% / (1 - var(--fader-width)));
+  width: calc(100% - 2 * 3% / (1 - var(--fader-width)));
 }
 
 .input-balance-slider,

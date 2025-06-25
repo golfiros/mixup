@@ -82,7 +82,6 @@ const update_port = (id, idx) => {
 }
 
 const input_list = document.getElementById("input_list");
-const src_list = document.getElementById("input_grp");
 const impl_input_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
@@ -97,7 +96,7 @@ const impl_input_new = (props) => {
 
   const delete_button = document.createElement("button");
   list_elem.appendChild(delete_button);
-  delete_button.classList.add("delete-btn");
+  delete_button.classList.add("vertical-menu-delete");
   delete_button.innerHTML = "delete";
   delete_button.onclick = () => {
     rpc.input_delete(props.id);
@@ -111,7 +110,7 @@ const impl_input_new = (props) => {
   input.hidden = true;
   input.id = props.id;
   input.name = "# input";
-  input.classList.add("content-inner");
+  input.classList.add("content");
 
   const label = document.createElement("div");
   input.appendChild(label);
@@ -130,43 +129,28 @@ const impl_input_new = (props) => {
 
   input_list.appendChild(list_elem);
 
-  const src = document.createElement("option");
-  src_list.appendChild(src);
-
-  src.value = props.id;
-  const src_observer = new MutationObserver(() => {
-    if (!document.contains(input))
-      src_observer.disconnect();
-    else
-      src.innerHTML = label.innerHTML;
-  });
-  src_observer.observe(label, { childList: true, subtree: true });
-
   const menu = document.createElement("div");
   input.appendChild(menu);
+  menu.classList.add("content-inner");
   menu.classList.add("input");
 
-  const menu_left = document.createElement("div");
-  menu.appendChild(menu_left);
-  menu_left.classList.add("input-left");
-
   const ports = document.createElement("div");
-  menu_left.appendChild(ports);
-  ports.classList.add("input-ports");
+  menu.appendChild(ports);
+  ports.classList.add("ports");
 
   for (var i = 0; i < 2; i++) {
     const idx = i;
 
     const port_button = document.createElement("button")
     ports.appendChild(port_button);
-    port_button.classList.add("input-port-select");
+    port_button.classList.add("port-select");
     port_button.innerHTML =
       `<div id="${props.id}_port_${idx}_node"></div>` +
       `<div id="${props.id}_port_${idx}_path"></div>`;
 
     const port_floater = floater_new(`${props.id}_port_${idx}`);
     ports.appendChild(port_floater.frame);
-    port_floater.content.classList.add("input-port-list");
+    port_floater.content.classList.add("port-list");
     port_button.onclick = port_floater.show;
     port_floater.title = `select input ${idx ? "R" : "L"}`;
     update_port(props.id, idx);
@@ -181,14 +165,21 @@ const impl_input_new = (props) => {
     port_observer.observe(input_ports, { childList: true });
   }
 
+  const menu_div = document.createElement("div");
+  menu.appendChild(menu_div);
+  menu_div.classList.add("input-controls");
+
+  const menu_left = document.createElement("div");
+  menu_div.appendChild(menu_left);
+  menu_left.classList.add("input-left");
+
   const gain_div = document.createElement("div");
-  menu.appendChild(gain_div);
+  menu_div.appendChild(gain_div);
   gain_div.classList.add("input-gain");
 
   const gain_ruler = document.createElement("div");
   gain_div.appendChild(gain_ruler);
   gain_ruler.classList.add("input-gain-ruler");
-
   for (var i = 0; i < 9; i++)
     gain_ruler.appendChild(document.createElement("div"));
 
