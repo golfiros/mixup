@@ -9,8 +9,11 @@
   width: 100%;
 }
 .mixer-channels {
+  display: flex;
   height: 100%;
   width: 82%;
+  width: calc(100% * (1 - var(--fader-width)));
+  overflow-x: scroll;
 }
 .mixer-channel, 
 .mixer-master {
@@ -20,6 +23,9 @@
 .mixer-master {
   width: calc(100% * var(--fader-width));
 }
+.mixer-channel {
+  width: calc(100% * var(--fader-width) / (1 - var(--fader-width)));
+}
 
 .mixer-channel-vol {
   position: relative;
@@ -27,8 +33,10 @@
   width: 100%;
 }
 .mixer-channel-slider {
+  position: relative;
   height: 100%;
-  width: 100%;
+  width: calc(100% * (1 - 4 * var(--padding-width)));
+  left: calc(100% * 2 * var(--padding-width));
   direction: rtl;
   writing-mode: vertical-lr;
 }
@@ -81,10 +89,9 @@
   height: 12.5%;
   width: 100%;
   background: var(--color-hl0);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis "...";
+  text-align: center;
+  line-height: 250%;
 }

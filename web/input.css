@@ -32,6 +32,9 @@
   width: 100%;
 }
 .input-gain-slider {
+  position: relative;
+  width: calc(100% * (1 - 4 * var(--padding-width)));
+  left: calc(100% * 2 * var(--padding-width));
   direction: rtl;
   writing-mode: vertical-lr;
 }

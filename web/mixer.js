@@ -12,8 +12,53 @@ const impl_channel_new = (id, props) => {
   const channels = document.getElementById(`${id}_channels`);
 
   const channel = document.createElement("div");
+  channels.appendChild(channel);
   channel.id = props.id;
   channel.name = "# channel";
+  channel.classList.add("mixer-channel");
+
+  const gain_div = document.createElement("div");
+  channel.appendChild(gain_div);
+  gain_div.classList.add("mixer-channel-vol");
+
+  const gain_ruler = document.createElement("div");
+  gain_div.appendChild(gain_ruler);
+  gain_ruler.classList.add("mixer-channel-ruler");
+  for (var i = 0; i < 12; i++)
+    gain_ruler.appendChild(document.createElement("div"));
+
+  const gain = document.createElement("input");
+  gain_div.appendChild(gain);
+  gain.classList.add("mixer-channel-slider");
+
+  gain.id = `${props.id}_gain`;
+  gain.type = "range";
+  gain.min = -60;
+  gain.max = 6;
+  gain.step = 0.1;
+  gain.value = props.gain;
+  update_vol(gain);
+  gain.oninput = gain.onchange = () => {
+    rpc.channel_set_gain(props.id, parseFloat(gain.value))
+      .then((res) => {
+        if (res !== null)
+          gain.value = res;
+      });
+    update_vol(gain);
+  }
+
+  const new_channel = document.createElement("button");
+  channel.appendChild(new_channel);
+  new_channel.classList.add("mixer-channel-new");
+  new_channel.innerHTML = "+";
+
+  const channel_label = document.createElement("div");
+  channel.appendChild(channel_label);
+  channel_label.classList.add("mixer-channel-label");
+  channel_label.innerHTML = channel.name;
+
+  /*
+  const channel = document.createElement("div");
 
   const label = document.createElement("div");
   channel.appendChild(label);
@@ -90,6 +135,7 @@ const impl_channel_new = (id, props) => {
         if (res !== null)
           balance.value = res;
       });
+  */
 };
 
 const impl_mixer_set_port = (id, idx, path) => {
@@ -232,17 +278,17 @@ const impl_mixer_new = (props) => {
     port_observer.observe(output_ports, { childList: true });
   }
 
-  const console = document.createElement("div");
-  menu.appendChild(console);
-  console.classList.add("mixer-console");
+  const mixer_console = document.createElement("div");
+  menu.appendChild(mixer_console);
+  mixer_console.classList.add("mixer-console");
 
   const channels = document.createElement("div");
-  console.appendChild(channels);
+  mixer_console.appendChild(channels);
   channels.id = `${props.id}_channels`;
   channels.classList.add("mixer-channels");
 
   const master_ch = document.createElement("div");
-  console.appendChild(master_ch);
+  mixer_console.appendChild(master_ch);
   master_ch.classList.add("mixer-master");
 
   const master_div = document.createElement("div");
@@ -263,10 +309,11 @@ const impl_mixer_new = (props) => {
   master_vol.type = "range";
   master_vol.min = -60;
   master_vol.max = 6;
+  master_vol.step = 0.1;
   master_vol.value = props.master;
   update_vol(master_vol);
   master_vol.oninput = master_vol.onchange = () => {
-    rpc.mixer_set_master(props.id, Number(master_vol.value))
+    rpc.mixer_set_master(props.id, parseFloat(master_vol.value))
       .then((res) => {
         if (res !== null)
           master_vol.value = res;
@@ -274,30 +321,18 @@ const impl_mixer_new = (props) => {
     update_vol(master_vol);
   }
 
-  const new_channel = document.createElement("button");
-  master_ch.appendChild(new_channel);
-  new_channel.classList.add("mixer-channel-new");
-  new_channel.innerHTML = "+";
+  const channel_new = document.createElement("button");
+  master_ch.appendChild(channel_new);
+  channel_new.classList.add("mixer-channel-new");
+  channel_new.innerHTML = "+";
+  channel_new.onclick = () => rpc.channel_new(props.id).then((ch) => impl_channel_new(props.id, ch));
 
   const master_label = document.createElement("div");
   master_ch.appendChild(master_label);
   master_label.classList.add("mixer-channel-label");
   master_label.innerHTML = "master";
 
-  /*
-  const channels = document.createElement("div");
-  mixer.appendChild(channels);
-
-  channels.id = `${props.id}_channels`;
-
   props.channels.forEach((ch) => impl_channel_new(props.id, ch));
-
-  const channel_new = document.createElement("button");
-  mixer.appendChild(channel_new);
-
-  channel_new.innerHTML = "new channel";
-  channel_new.onclick = () => rpc.channel_new(props.id).then((ch) => impl_channel_new(props.id, ch));
-  */
 };
 
 const mixer_new = document.getElementById("mixer_new");
@@ -318,20 +353,23 @@ rpc.register("mixer_set_master", (id, val) => {
   update_vol(master);
 });
 
-/*
 rpc.register("channel_new", impl_channel_new);
 rpc.register("channel_delete", (id) => {
   const channel = document.getElementById(id);
   channel.remove();
 });
+/*
 rpc.register("channel_set_src", (id, val) => {
   const src = document.getElementById(`${id}_src`);
   src.value = val;
 });
+*/
 rpc.register("channel_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);
   gain.value = val;
+  update_vol(gain);
 });
+/*
 rpc.register("channel_set_balance", (id, val) => {
   const balance = document.getElementById(`${id}_balance`);
   balance.value = val;

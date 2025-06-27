@@ -218,6 +218,8 @@
 <script src="/input.js" type="module"></script>
 <script src="/mixer.js" type="module"></script>
 <script type="module">
+  const types = ["input", "mixer"];
+
   const refresh = window.refresh = () => {
     [...document.getElementById("content").childNodes].forEach((node) => {
       node.hidden = true;
@@ -225,10 +227,10 @@
     });
 
     var type = localStorage.getItem("selected");
-    if (type === null)
+    if (type === null || !types.includes(type))
       localStorage.setItem("selected", type = "input");
 
-    ["input", "mixer"].forEach((type) => {
+    types.forEach((type) => {
       document.getElementById(`${type}_nav`).classList.remove("active")
       document.getElementById(`${type}_menu`).hidden = true;
     });
@@ -246,7 +248,7 @@
       localStorage.setItem(type, "");
     }
   }
-  ["input", "mixer"].forEach((type) => {
+  types.forEach((type) => {
     document.getElementById(`${type}_nav`).onclick = () => {
       localStorage.setItem("selected", type);
       refresh();
@@ -256,7 +258,7 @@
     var drag = false, swipe = false;
     var item = null;
     list.ontouchstart = (ev) => {
-      if (ev.target.classList.contains("vertical-menu-delete"))
+      if (!ev.target.classList.contains("vertical-menu-item"))
         return;
       x = x0 = ev.touches[0].clientX;
       y = y0 = ev.touches[0].clientY;

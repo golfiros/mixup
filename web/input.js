@@ -1,6 +1,6 @@
 const update_gain = (gain) => {
-  const start = 50 * (1 + Math.min(0, gain.value / 24));
-  const end = 50 * (1 + Math.max(0, gain.value / 24));
+  const start = 50 * (1 + Math.min(0, parseFloat(gain.value) / 24));
+  const end = 50 * (1 + Math.max(0, parseFloat(gain.value) / 24));
   gain.style.background = `linear-gradient(to top,
     var(--color-bg) 0%,
     var(--color-bg) ${start}%,
@@ -12,8 +12,8 @@ const update_gain = (gain) => {
 }
 
 const update_balance = (balance) => {
-  const start = 50 * (1 + Math.min(0, balance.value / 100));
-  const end = 50 * (1 + Math.max(0, balance.value / 100));
+  const start = 50 * (1 + Math.min(0, parseFloat(balance.value) / 100));
+  const end = 50 * (1 + Math.max(0, parseFloat(balance.value) / 100));
   balance.style.background = `linear-gradient(to right,
     var(--color-bg) 0%,
     var(--color-bg) ${start}%,
@@ -206,7 +206,7 @@ const impl_input_new = (props) => {
   gain.oninput = gain.onchange = () => {
     if (Math.abs(gain.value) < 0.5)
       gain.value = 0;
-    rpc.input_set_gain(props.id, Number(gain.value))
+    rpc.input_set_gain(props.id, parseFloat(gain.value))
       .then((res) => {
         if (res !== null)
           gain.value = res;
@@ -247,7 +247,7 @@ const impl_input_new = (props) => {
   balance.oninput = balance.onchange = () => {
     if (Math.abs(balance.value) < 5)
       balance.value = 0;
-    rpc.input_set_balance(props.id, Number(balance.value))
+    rpc.input_set_balance(props.id, parseFloat(balance.value))
       .then((res) => {
         if (res !== null)
           balance.value = res;
