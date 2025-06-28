@@ -35,24 +35,29 @@ const floater_new = window.floater_new = (id) => {
   Object.defineProperty(floater, "title", { set: (text) => title.innerHTML = text });
   Object.defineProperty(floater, "show", {
     value: () => {
-      frame.classList.add("active");
       var state = history.state;
+
       if (state === null)
-        state = {};
-      state.floater_hide = `${id}_frame`;
+        state = { floater_stack: [] };
+      if (state.floater_stack === undefined)
+        state.floater_stack = [];
+
+      frame.style.zIndex = 1000 + 10 * state.floater_stack.length;
+      frame.classList.add("active");
+
+      state.floater_stack.push(`${id}_frame`);
       history.replaceState(state, "");
-      history.pushState({ floater_show: `${id}_frame` }, "");
+      history.pushState(state, "");
     }
   });
   return floater;
 }
-const floater_history = window.floater_history = (state) => {
-  if (state.floater_hide !== undefined)
-    document.getElementById(state.floater_hide).classList.remove("active");
-  if (state.floater_show !== undefined)
-    document.getElementById(state.floater_show).classList.add("active");
-}
+const floater_init = window.floater_init = () => history.state?.floater_stack?.forEach((id, idx) => {
+  const frame = document.getElementById(id);
+  frame.style.zIndex = 1000 + 10 * idx;
+  frame.classList.add("active");
+});
 window.addEventListener("popstate", (ev) => {
-  if (ev.state !== null)
-    floater_history(ev.state)
+  if (ev.state !== null && ev.state.floater_stack !== undefined)
+    document.getElementById(ev.state.floater_stack.at(-1)).classList.remove("active");
 })

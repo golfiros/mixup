@@ -310,8 +310,7 @@
 
   rpc.register("done", () => {
     refresh();
-    if (history.state !== null)
-      floater_history(history.state);
+    floater_init();
   });
 
   rpc.init();
