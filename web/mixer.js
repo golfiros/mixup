@@ -11,10 +11,13 @@ const update_vol = (vol) => {
 const impl_channel_new = (id, props) => {
   const channels = document.getElementById(`${id}_channels`);
 
+  const channel_div = document.createElement("div");
+  channel_div.id = props.id;
+  channel_div.name = "# channel";
+  channel_div.classList.add("mixer-channel-div");
+
   const channel = document.createElement("div");
-  channels.appendChild(channel);
-  channel.id = props.id;
-  channel.name = "# channel";
+  channel_div.appendChild(channel);
   channel.classList.add("mixer-channel");
 
   const gain_div = document.createElement("div");
@@ -56,6 +59,27 @@ const impl_channel_new = (id, props) => {
   channel.appendChild(channel_label);
   channel_label.classList.add("mixer-channel-label");
   channel_label.innerHTML = channel.name;
+
+  const label_observer = new MutationObserver(() => {
+    if (!document.contains(channel_div))
+      label_observer.disconnect();
+    else {
+      const idx = [...channels.childNodes].indexOf(channel_div);
+      const name = channel_div.name.replace("#", idx + 1);
+      channel_label.innerHTML = name;
+    }
+  });
+  label_observer.observe(channels, { childList: true });
+  channels.appendChild(channel_div);
+
+  const delete_button = document.createElement("button");
+  channel_div.appendChild(delete_button);
+  delete_button.classList.add("mixer-channel-delete");
+  delete_button.innerHTML = "delete";
+  delete_button.onclick = () => {
+    rpc.channel_delete(props.id);
+    channel_div.remove();
+  };
 
   /*
   const channel = document.createElement("div");
@@ -286,6 +310,59 @@ const impl_mixer_new = (props) => {
   mixer_console.appendChild(channels);
   channels.id = `${props.id}_channels`;
   channels.classList.add("mixer-channels");
+  var x, x0, y, y0, t0;
+  var drag = false, swipe = false;
+  var item = null;
+  channels.ontouchstart = (ev) => {
+    if (!ev.target.classList.contains("mixer-channel-label") &&
+      !ev.target.classList.contains("mixer-channel-button"))
+      return;
+    x = x0 = ev.touches[0].clientX;
+    y = y0 = ev.touches[0].clientY;
+    t0 = Date.now();
+    drag = true;
+    swipe = false;
+    item = ev.target.parentNode;
+  };
+  channels.addEventListener("touchmove", (ev) => {
+    if (!drag)
+      return;
+
+    x = ev.touches[0].clientX;
+    y = ev.touches[0].clientY;
+
+    const dx = x - x0, dy = y - y0;
+
+    if (!swipe) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5)
+        swipe = true;
+      else if (Math.abs(dx) > Math.abs(dy)) {
+        drag = false;
+        return;
+      }
+    }
+
+    if (swipe) {
+      ev.preventDefault();
+      item.style.transform = `translateY(${dy < 0 ? Math.max(dy, -0.25 * channels.offsetHeight) : 0}px)`;
+    }
+  }, { passive: false });
+  channels.ontouchend = () => {
+    if (!item)
+      return;
+
+    drag = false;
+
+    const dy = y - y0;
+
+    if (swipe && dy < -0.125 * channels.offsetHeight)
+      item.style.transform = `translateY(${-0.25 * channels.offsetHeight}px)`;
+    else
+      item.style.transform = `translateY(0)`;
+
+    item = null;
+    swipe = false;
+  };
 
   const master_ch = document.createElement("div");
   mixer_console.appendChild(master_ch);

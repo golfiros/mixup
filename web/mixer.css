@@ -15,7 +15,7 @@
   width: calc(100% * (1 - var(--fader-width)));
   overflow-x: scroll;
 }
-.mixer-channel, 
+.mixer-channel-div, 
 .mixer-master {
   position: relative;
   height: 100%;
@@ -23,8 +23,24 @@
 .mixer-master {
   width: calc(100% * var(--fader-width));
 }
-.mixer-channel {
+.mixer-channel-div {
   width: calc(100% * var(--fader-width) / (1 - var(--fader-width)));
+}
+
+.mixer-channel {
+  position: relative;
+  transition: transform 0.1s ease;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+.mixer-channel-delete {
+  position: absolute;
+  bottom: 0;
+  left: 1px;
+  height: 25%;
+  width: calc(100% - 2px);
+  background: var(--color-red);
 }
 
 .mixer-channel-vol {
