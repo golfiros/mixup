@@ -45,19 +45,23 @@ const floater_new = window.floater_new = (id) => {
       frame.style.zIndex = 1000 + 10 * state.floater_stack.length;
       frame.classList.add("active");
 
-      state.floater_stack.push(`${id}_frame`);
+      state.floater_new = `${id}_frame`;
       history.replaceState(state, "");
+
+      state.floater_stack.push(state.floater_new);
+      delete state.floater_new;
       history.pushState(state, "");
     }
   });
   return floater;
 }
-const floater_init = window.floater_init = () => history.state?.floater_stack?.forEach((id, idx) => {
+const floater_init = window.floater_init = (state) => state?.floater_stack?.forEach((id, idx) => {
   const frame = document.getElementById(id);
   frame.style.zIndex = 1000 + 10 * idx;
   frame.classList.add("active");
 });
 window.addEventListener("popstate", (ev) => {
-  if (ev.state !== null && ev.state.floater_stack !== undefined)
-    document.getElementById(ev.state.floater_stack.at(-1)).classList.remove("active");
+  floater_init(ev.state);
+  if (ev.state !== null && ev.state.floater_new !== undefined)
+    document.getElementById(ev.state.floater_new).classList.remove("active");
 })
