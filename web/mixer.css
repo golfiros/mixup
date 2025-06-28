@@ -47,6 +47,7 @@
   position: relative;
   height: 75%;
   width: 100%;
+  overflow: hidden;
 }
 .mixer-channel-slider {
   position: relative;
@@ -81,18 +82,27 @@
   position: absolute;
   z-index: 1;
   pointer-events: none;
-  display: flex;
-  justify-content: space-between;
-  flex-direction: column;
   top: 0;
   right: 0;
   height: 100%;
   width: 30%;
 }
 .mixer-channel-ruler div {
+  position: absolute;
   height: 2px;
   width: 100%;
   background: white;
+}
+
+.mixer-channel-indicator {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  height: 0;
+  width: 0;
+  border-left: 6vw solid white;
+  border-top: 1.7vh solid transparent;
+  border-bottom: 1.7vh solid transparent;
 }
 
 .mixer-channel-new {

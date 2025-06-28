@@ -1,6 +1,9 @@
 const update_gain = (gain) => {
-  const start = 50 * (1 + Math.min(0, parseFloat(gain.value) / 24));
-  const end = 50 * (1 + Math.max(0, parseFloat(gain.value) / 24));
+  const fraction =
+    (parseFloat(gain.value) - parseFloat(gain.min)) /
+    (parseFloat(gain.max) - parseFloat(gain.min));
+  const start = 100 * Math.min(0.5, fraction);
+  const end = 100 * Math.max(0.5, fraction);
   gain.style.background = `linear-gradient(to top,
     var(--color-bg) 0%,
     var(--color-bg) ${start}%,
@@ -9,11 +12,15 @@ const update_gain = (gain) => {
     var(--color-bg) ${end}%,
     var(--color-bg) 100%)`;
   document.getElementById(`${gain.id}_val`).innerHTML = `${parseFloat(gain.value).toFixed(1)}dB`;
+  document.getElementById(`${gain.id}_indicator`).style.bottom = `calc(100% * ${fraction} - 1.7vh)`;
 }
 
 const update_balance = (balance) => {
-  const start = 50 * (1 + Math.min(0, parseFloat(balance.value) / 100));
-  const end = 50 * (1 + Math.max(0, parseFloat(balance.value) / 100));
+  const fraction =
+    (parseFloat(balance.value) - parseFloat(balance.min)) /
+    (parseFloat(balance.max) - parseFloat(balance.min));
+  const start = 100 * Math.min(0.5, fraction);
+  const end = 100 * Math.max(0.5, fraction);
   balance.style.background = `linear-gradient(to right,
     var(--color-bg) 0%,
     var(--color-bg) ${start}%,
@@ -184,6 +191,11 @@ const impl_input_new = (props) => {
   for (var i = 0; i < 9; i++)
     gain_ruler.appendChild(document.createElement("div"));
 
+  const gain_indicator = document.createElement("div");
+  gain_div.appendChild(gain_indicator);
+  gain_indicator.id = `${props.id}_gain_indicator`;
+  gain_indicator.classList.add("input-gain-indicator");
+
   const gain_labels = document.createElement("div");
   gain_div.appendChild(gain_labels);
   gain_labels.classList.add("input-gain-labels");
@@ -205,8 +217,6 @@ const impl_input_new = (props) => {
   gain.value = props.gain;
   update_gain(gain);
   gain.oninput = gain.onchange = () => {
-    if (Math.abs(gain.value) < 0.5)
-      gain.value = 0;
     rpc.input_set_gain(props.id, parseFloat(gain.value))
       .then((res) => {
         if (res !== null)

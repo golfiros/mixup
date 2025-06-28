@@ -1,11 +1,24 @@
-const update_vol = (vol) => {
-  const end = 100 * (parseFloat(vol.value) + 60) / (6 + 60);
-  vol.style.background = `linear-gradient(to top,
+const fader_max = 6, fader_min = -60, fader_offset = 0.1, fader_slope = 0.15;
+const fader_curve = (x) =>
+  (fader_max - fader_min) *
+  (Math.pow(x + fader_offset, fader_slope) - Math.pow(fader_offset, fader_slope)) /
+  (Math.pow(1 + fader_offset, fader_slope) - Math.pow(fader_offset, fader_slope))
+  + fader_min;
+const fader_curve_inv = (y) =>
+  fader_offset * (Math.pow(
+    (Math.pow(1 + 1 / fader_offset, fader_slope) - 1) *
+    (y - fader_min) / (fader_max - fader_min) + 1,
+    1 / fader_slope
+  ) - 1);
+
+const update_gain = (gain) => {
+  gain.style.background = `linear-gradient(to top,
     #12a119 0%,
-    #12a119 ${end}%,
-    var(--color-bg) ${end}%,
+    #12a119 ${gain.value}%,
+    var(--color-bg) ${gain.value}%,
     var(--color-bg) 100%)`;
   //document.getElementById(`${vol.id}_val`).innerHTML = `${parseFloat(vol.value).toFixed(1)}dB`;
+  document.getElementById(`${gain.id}_indicator`).style.bottom = `calc(${gain.value}% - 1.7vh)`;
 }
 
 const impl_channel_set_src = (id, obj_id) => {
@@ -82,8 +95,16 @@ const impl_channel_new = (id, props) => {
   const gain_ruler = document.createElement("div");
   gain_div.appendChild(gain_ruler);
   gain_ruler.classList.add("mixer-channel-ruler");
-  for (var i = 0; i < 12; i++)
-    gain_ruler.appendChild(document.createElement("div"));
+  for (var i = 0; i < 12; i++) {
+    const tick = document.createElement("div");
+    gain_ruler.appendChild(tick);
+    tick.style.bottom = `calc(${100 * fader_curve_inv((fader_max - fader_min) * (i / 11) + fader_min)}% - 2px)`;
+  }
+
+  const gain_indicator = document.createElement("div");
+  gain_div.appendChild(gain_indicator);
+  gain_indicator.id = `${props.id}_gain_indicator`;
+  gain_indicator.classList.add("mixer-channel-indicator");
 
   const gain = document.createElement("input");
   gain_div.appendChild(gain);
@@ -91,18 +112,15 @@ const impl_channel_new = (id, props) => {
 
   gain.id = `${props.id}_gain`;
   gain.type = "range";
-  gain.min = -60;
-  gain.max = 6;
   gain.step = 0.1;
-  gain.value = props.gain;
-  update_vol(gain);
+  gain.value = 100 * fader_curve_inv(props.gain);
   gain.oninput = gain.onchange = () => {
-    rpc.channel_set_gain(props.id, parseFloat(gain.value))
+    rpc.channel_set_gain(props.id, fader_curve(parseFloat(gain.value) / 100))
       .then((res) => {
         if (res !== null)
-          gain.value = res;
+          gain.value = 100 * fader_curve_inv(res);
       });
-    update_vol(gain);
+    update_gain(gain);
   }
 
   const new_channel = document.createElement("button");
@@ -130,6 +148,8 @@ const impl_channel_new = (id, props) => {
   });
   label_observer.observe(channels, { childList: true });
   channels.appendChild(channel_div);
+
+  update_gain(gain);
 
   const delete_button = document.createElement("button");
   channel_div.appendChild(delete_button);
@@ -168,38 +188,6 @@ const impl_channel_new = (id, props) => {
   src_observer.observe(input_list, { childList: true, subtree: true });
 
   /*
-  src.id = `${props.id}_src`;
-  src.innerHTML = src_list.innerHTML;
-  const src_observer = new MutationObserver(() => {
-    if (!document.contains(channel))
-      src_observer.disconnect();
-    else {
-      const val = src.value;
-      src.innerHTML = src_list.innerHTML;
-      src.value = val;
-    }
-  });
-  src_observer.observe(src_list, { childList: true, subtree: true });
-  src.value = props.src;
-
-  src.onchange = () =>
-    rpc.channel_set_src(props.id, src.value);
-
-  const gain = document.createElement("input");
-  channel.appendChild(gain);
-
-  gain.id = `${props.id}_gain`;
-  gain.type = "range";
-  gain.min = -60;
-  gain.max = 6;
-  gain.value = props.gain;
-  gain.oninput = gain.onchange = () =>
-    rpc.channel_set_gain(props.id, Number(gain.value))
-      .then((res) => {
-        if (res !== null)
-          gain.value = res;
-      });
-
   const balance = document.createElement("input");
   channel.appendChild(balance);
 
@@ -430,8 +418,16 @@ const impl_mixer_new = (props) => {
   const master_ruler = document.createElement("div");
   master_div.appendChild(master_ruler);
   master_ruler.classList.add("mixer-channel-ruler");
-  for (var i = 0; i < 12; i++)
-    master_ruler.appendChild(document.createElement("div"));
+  for (var i = 0; i < 12; i++) {
+    const tick = document.createElement("div");
+    master_ruler.appendChild(tick);
+    tick.style.bottom = `calc(${100 * fader_curve_inv((fader_max - fader_min) * (i / 11) + fader_min)}% - 2px)`;
+  }
+
+  const master_indicator = document.createElement("div");
+  master_div.appendChild(master_indicator);
+  master_indicator.id = `${props.id}_master_indicator`;
+  master_indicator.classList.add("mixer-channel-indicator");
 
   const master_vol = document.createElement("input");
   master_div.appendChild(master_vol);
@@ -439,18 +435,16 @@ const impl_mixer_new = (props) => {
 
   master_vol.id = `${props.id}_master`;
   master_vol.type = "range";
-  master_vol.min = -60;
-  master_vol.max = 6;
   master_vol.step = 0.1;
-  master_vol.value = props.master;
-  update_vol(master_vol);
+  master_vol.value = 100 * fader_curve_inv(props.master);
+  update_gain(master_vol);
   master_vol.oninput = master_vol.onchange = () => {
-    rpc.mixer_set_master(props.id, parseFloat(master_vol.value))
+    rpc.mixer_set_master(props.id, fader_curve(parseFloat(master_vol.value) / 100))
       .then((res) => {
         if (res !== null)
-          master_vol.value = res;
+          master_vol.value = 100 * fader_curve_inv(res);
       });
-    update_vol(master_vol);
+    update_gain(master_vol);
   }
 
   const channel_new = document.createElement("button");
@@ -481,8 +475,8 @@ rpc.register("mixer_delete", (id) => {
 rpc.register("mixer_set_port", impl_mixer_set_port);
 rpc.register("mixer_set_master", (id, val) => {
   const master = document.getElementById(`${id}_master`);
-  master.value = val;
-  update_vol(master);
+  master.value = 100 * fader_curve_inv(val);
+  update_gain(master);
 });
 
 rpc.register("channel_new", impl_channel_new);
@@ -493,8 +487,8 @@ rpc.register("channel_delete", (id) => {
 rpc.register("channel_set_src", impl_channel_set_src);
 rpc.register("channel_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);
-  gain.value = val;
-  update_vol(gain);
+  gain.value = 100 * fader_curve_inv(val);
+  update_gain(gain);
 });
 /*
 rpc.register("channel_set_balance", (id, val) => {
