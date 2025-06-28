@@ -1,26 +1,3 @@
-// taken from the mongoose JSON-RPC tutorial
-
-// Copyright (c) 2004-2013 Sergey Lyubka
-// Copyright (c) 2013-2025 Cesanta Software Limited
-// Copyright (c) 2025-2025 Gabriel Golfetti
-// All rights reserved
-//
-// This software is dual-licensed: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License version 2 as
-// published by the Free Software Foundation. For the terms of this
-// license, see <http://www.gnu.org/licenses/>.
-//
-// You are free to use this software under the terms of the GNU General
-// Public License, but WITHOUT ANY WARRANTY; without even the implied
-// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-// See the GNU General Public License for more details.
-//
-// Alternatively, you can license this software under a commercial
-// license, as set out in <https://mongoose.ws/licensing/>.
-
-// JSON-RPC over Websocket implementation
-
-const JSONRPC_TIMEOUT_MS = 1000;
 const url =
   window.location.protocol.replace("http", "ws") +
   "//" + window.location.host + "/rpc";
@@ -37,7 +14,7 @@ const call = (method, params) => {
       if (pending[id] === undefined) return;
       delete pending[id];
       reject(0, "Message timeout");
-    }, JSONRPC_TIMEOUT_MS);
+    }, 1000);
     pending[id] = { resolve, reject };
   });
 };
@@ -63,7 +40,7 @@ const rpc = window.rpc = {
     setTimeout(() => {
       if (!ready)
         reject()
-    }, JSONRPC_TIMEOUT_MS);
+    }, 1000);
     init = () => call("init").then(resolve, reject);
     if (ready)
       init();
