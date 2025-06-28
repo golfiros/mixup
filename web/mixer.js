@@ -365,7 +365,7 @@ const impl_mixer_new = (props) => {
   var item = null;
   channels.ontouchstart = (ev) => {
     if (!ev.target.classList.contains("mixer-channel-label") &&
-      !ev.target.classList.contains("mixer-channel-button"))
+      !ev.target.classList.contains("mixer-channel-mute"))
       return;
     x = x0 = ev.touches[0].clientX;
     y = y0 = ev.touches[0].clientY;
