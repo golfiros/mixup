@@ -159,6 +159,7 @@ int main(int, char **) {
   srv_reg(data.srv, channel_set_src, "channel_set_src");
   srv_reg(data.srv, channel_set_gain, "channel_set_gain");
   srv_reg(data.srv, channel_set_balance, "channel_set_balance");
+  srv_reg(data.srv, channel_set_mute, "channel_set_mute");
 
   data.map = map_new(sizeof(struct obj));
 

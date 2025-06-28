@@ -21,6 +21,7 @@ struct channel {
   char *id;
   char *src;
   double gain, balance;
+  bool mute;
 
   struct mixer *mixer;
   float2 **buffer;
@@ -39,5 +40,6 @@ void channel_delete(void *);
 void channel_set_src(void *);
 void channel_set_gain(void *);
 void channel_set_balance(void *);
+void channel_set_mute(void *);
 
 #endif

@@ -123,10 +123,17 @@ const impl_channel_new = (id, props) => {
     update_gain(gain);
   }
 
-  const new_channel = document.createElement("button");
-  channel.appendChild(new_channel);
-  new_channel.classList.add("mixer-channel-new");
-  new_channel.innerHTML = "+";
+  const channel_mute = document.createElement("button");
+  channel.appendChild(channel_mute);
+  channel_mute.classList.add("mixer-channel-mute");
+  channel_mute.innerHTML = "M";
+  channel_mute.onclick = () => {
+    channel_mute.classList.toggle("active");
+    const mute = channel_mute.classList.contains("active");
+    rpc.channel_set_mute(props.id, mute);
+  }
+  if (props.mute)
+    channel_mute.classList.add("active");
 
   const channel_label = document.createElement("button");
   channel.appendChild(channel_label);

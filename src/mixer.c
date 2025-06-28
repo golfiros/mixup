@@ -26,16 +26,23 @@ void print_mixer(FILE *fp, va_list *ap) {
 
 void print_channel(FILE *fp, va_list *ap) {
   struct channel *channel = va_arg(*ap, typeof(channel));
-  fprintf(fp, "{\"id\":\"%s\",\"src\":\"%s\",\"gain\":%f,\"balance\":%f}",
-          channel->id, channel->src, channel->gain, channel->balance);
+  fprintf(
+      fp,
+      "{\"id\":\"%s\",\"src\":\"%s\",\"gain\":%f,\"balance\":%f,\"mute\":%s}",
+      channel->id, channel->src, channel->gain, channel->balance,
+      channel->mute ? "true" : "false");
 }
 
 static inline void _update_vol(struct mixer *mixer, size_t c) {
   const struct channel *channel = mixer->channels.data[c];
-  mixer->vols[c][0] = DB_TO_AMP(mixer->master) * DB_TO_AMP(channel->gain) *
-                      PAN_POWL(channel->balance);
-  mixer->vols[c][1] = DB_TO_AMP(mixer->master) * DB_TO_AMP(channel->gain) *
-                      PAN_POWR(channel->balance);
+  mixer->vols[c][0] = channel->mute ? 0.0f
+                                    : DB_TO_AMP(mixer->master) *
+                                          DB_TO_AMP(channel->gain) *
+                                          PAN_POWL(channel->balance);
+  mixer->vols[c][1] = channel->mute ? 0.0f
+                                    : DB_TO_AMP(mixer->master) *
+                                          DB_TO_AMP(channel->gain) *
+                                          PAN_POWR(channel->balance);
 }
 
 #define PATH_NONE ""
@@ -54,6 +61,7 @@ RPC_DEFN(mixer_new) {
                            .ptr = mixer,
                        }),
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
+
       .buffer = malloc(0),
   };
   vec_init(&mixer->channels);
@@ -184,7 +192,8 @@ RPC_DEFN(channel_new, (char *, id)) {
                            .ptr = channel,
                        }),
       .src = strdup(MAP_ID_NULL),
-      .gain = MIN_GAIN,
+      .mute = true,
+
       .mixer = mixer,
   };
   core_cbk(data->core, impl_channel_new, channel);
@@ -286,4 +295,17 @@ RPC_DEFN(channel_set_balance, (char *, id), (double, balance)) {
     rpc_return(channel->balance);
   else
     rpc_return();
+}
+RPC_DEFN(channel_set_mute, (char *, id), (bool, mute)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_CHANNEL) {
+    free(id);
+    rpc_err(-32602, "Provided object is not a channel");
+  }
+  struct channel *channel = obj->ptr;
+  channel->mute = mute;
+  core_cbk(data->core, impl_channel_update_vol, channel);
+  rpc_relay("channel_set_mute", id, mute);
+  rpc_return();
 }

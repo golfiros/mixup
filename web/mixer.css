@@ -105,10 +105,14 @@
   border-bottom: 1.7vh solid transparent;
 }
 
+.mixer-channel-mute,
 .mixer-channel-new {
   height: 12.5%;
   width: 100%;
   background: var(--color-hl0);
+}
+.mixer-channel-mute.active {
+  background: var(--color-red);
 }
 
 .mixer-channel-label {

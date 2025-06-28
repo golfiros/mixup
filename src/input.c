@@ -42,6 +42,7 @@ RPC_DEFN(input_new) {
                            .ptr = input,
                        }),
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
+
       .buffer = malloc(0),
   };
   core_cbk(data->core, impl_input_new, input);
