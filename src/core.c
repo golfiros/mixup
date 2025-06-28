@@ -89,7 +89,7 @@ static void _process(void *_data, struct spa_io_position *pos) {
   vec_foreach(port, core->ports) {
     if (port.buf) {
       *port.buf = pw_filter_get_dsp_buffer(port.buf, buffer_size);
-      if (!port.input)
+      if (*port.buf && !port.input)
         for (size_t t = 0; t < buffer_size; t++)
           (*port.buf)[t] = 0.0f;
     }

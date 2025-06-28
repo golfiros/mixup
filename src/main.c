@@ -180,16 +180,20 @@ err_srv:
   srv_del(data.srv);
 
   vec_foreach(mixer, data.mixers) {
-    for (size_t j = 0; j < 2; j++)
-      free(mixer->port[j]);
+    for (size_t i = 0; i < 2; i++) {
+      mixer->port_data[i] = nullptr;
+      free(mixer->port[i]);
+    }
     free(mixer->buffer);
     free(mixer);
   }
   vec_free(&data.mixers);
 
   vec_foreach(input, data.inputs) {
-    for (size_t j = 0; j < 2; j++)
-      free(input->port[j]);
+    for (size_t i = 0; i < 2; i++) {
+      input->port_data[i] = nullptr;
+      free(input->port[i]);
+    }
     free(input->buffer);
     free(input);
   }

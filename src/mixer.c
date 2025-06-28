@@ -194,7 +194,6 @@ RPC_DEFN(channel_new, (char *, id)) {
 }
 
 CBK_DEFN(impl_channel_delete, (struct channel *, channel)) {
-  struct data *data = cbk_data();
   struct mixer *mixer = channel->mixer;
   size_t idx = vec_idx(mixer->channels, == channel);
   vec_delete(&mixer->channels, idx);
@@ -219,14 +218,12 @@ RPC_DEFN(channel_delete, (char *, id)) {
 }
 
 CBK_DEFN(impl_channel_set_src_none, (struct channel *, channel)) {
-  struct data *data = cbk_data();
   struct mixer *mixer = channel->mixer;
   size_t c = vec_idx(mixer->channels, == channel);
   mixer->sources[c] = nullptr;
 }
 CBK_DEFN(impl_channel_set_src_input, (struct channel *, channel),
          (struct input *, input)) {
-  struct data *data = cbk_data();
   struct mixer *mixer = channel->mixer;
   size_t c = vec_idx(mixer->channels, == channel);
   mixer->sources[c] = &input->buffer;
