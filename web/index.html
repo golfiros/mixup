@@ -182,10 +182,6 @@
 <body>
   <div id="input_ports" hidden></div>
   <div id="output_ports" hidden></div>
-  <select id="src_list" hidden>
-    <option value="00000000-0000-0000-0000-000000000000">select src</option>
-    <optgroup label="inputs" id="input_grp"></optgroup>
-  </select>
   <div class="vertical-menu" id="input_menu" hidden>
     <div class="vertical-menu-title">
       <div>inputs</div>
@@ -310,7 +306,7 @@
 
   rpc.register("done", () => {
     refresh();
-    floater_init();
+    floater_init(history.state);
   });
 
   rpc.init();
