@@ -8,6 +8,61 @@ const update_vol = (vol) => {
   //document.getElementById(`${vol.id}_val`).innerHTML = `${parseFloat(vol.value).toFixed(1)}dB`;
 }
 
+const impl_channel_set_src = (id, obj_id) => {
+  const type_div = document.getElementById(`${id}_src_type`);
+  const obj_div = document.getElementById(`${id}_src_obj`);
+  const port = document.getElementById(obj_id);
+  if (port === null) {
+    type_div.innerHTML = "no source";
+    obj_div.innerHTML = "select source";
+  } else {
+    type_div.innerHTML = [...port.querySelector(".content-inner").classList]
+      .filter((c) => c !== "content-inner")[0];
+    obj_div.innerHTML = port.querySelector(".content-title").innerHTML;
+  }
+  [...document.getElementById(`${id}_src`).childNodes]
+    .filter((node) => node instanceof HTMLButtonElement)
+    .forEach((node) => node.classList.remove("active"));
+  document.getElementById(`${id}_src_${obj_id}`)?.classList.add("active");
+}
+
+const input_list = document.getElementById("input_list");
+const update_src = (id) => {
+  const src = document.getElementById(`${id}_src`);
+  const active = src.querySelector("button.active")?.name;
+  src.innerHTML = "";
+
+  const button = document.createElement("button");
+  src.appendChild(button);
+  button.id = `${id}_src_00000000-0000-0000-0000-000000000000`;
+  button.name = "00000000-0000-0000-0000-000000000000";
+  button.innerHTML = "no source";
+  button.onclick = () => {
+    rpc.channel_set_src(id, "00000000-0000-0000-0000-000000000000");
+    impl_channel_set_src(id, "00000000-0000-0000-0000-000000000000");
+    history.back();
+  }
+
+  const inputs = document.createElement("div");
+  src.appendChild(inputs);
+  inputs.innerHTML = "inputs";
+
+  [...input_list.childNodes].forEach((elem) => {
+    const obj = elem.name, button = document.createElement("button");
+    src.appendChild(button);
+    button.id = `${id}_src_${obj}`;
+    button.name = obj;
+    button.innerHTML = elem.childNodes[0].innerHTML;
+    button.onclick = () => {
+      rpc.channel_set_src(id, obj);
+      impl_channel_set_src(id, obj);
+      history.back();
+    };
+  })
+  if (active !== undefined)
+    impl_channel_set_src(id, active);
+}
+
 const impl_channel_new = (id, props) => {
   const channels = document.getElementById(`${id}_channels`);
 
@@ -55,10 +110,14 @@ const impl_channel_new = (id, props) => {
   new_channel.classList.add("mixer-channel-new");
   new_channel.innerHTML = "+";
 
-  const channel_label = document.createElement("div");
+  const channel_label = document.createElement("button");
   channel.appendChild(channel_label);
   channel_label.classList.add("mixer-channel-label");
   channel_label.innerHTML = channel.name;
+
+  const channel_menu = floater_new(`${props.id}_menu`);
+  channel_div.appendChild(channel_menu.frame);
+  channel_label.onclick = channel_menu.show;
 
   const label_observer = new MutationObserver(() => {
     if (!document.contains(channel_div))
@@ -66,7 +125,7 @@ const impl_channel_new = (id, props) => {
     else {
       const idx = [...channels.childNodes].indexOf(channel_div);
       const name = channel_div.name.replace("#", idx + 1);
-      channel_label.innerHTML = name;
+      channel_menu.title = channel_label.innerHTML = name;
     }
   });
   label_observer.observe(channels, { childList: true });
@@ -81,38 +140,34 @@ const impl_channel_new = (id, props) => {
     channel_div.remove();
   };
 
-  /*
-  const channel = document.createElement("div");
+  const src_div = document.createElement("div");
+  channel_menu.content.appendChild(src_div);
+  src_div.classList.add("channel-src");
 
-  const label = document.createElement("div");
-  channel.appendChild(label);
+  const src_button = document.createElement("button")
+  src_div.appendChild(src_button);
+  src_button.classList.add("channel-src-select");
+  src_button.innerHTML =
+    `<div id="${props.id}_src_type"></div>` +
+    `<div id="${props.id}_src_obj"></div>`;
 
-  const label_observer = new MutationObserver(() => {
-    if (!document.contains(channel))
-      label_observer.disconnect();
-    else {
-      const idx = Array.from(channels.childNodes).indexOf(channel);
-      label.innerHTML = channel.name.replace("#", idx + 1);
-    }
+  const src_floater = floater_new(`${props.id}_src`);
+  src_div.appendChild(src_floater.frame);
+  src_floater.content.classList.add("port-list");
+  src_button.onclick = src_floater.show;
+  src_floater.title = `select source`;
+  update_src(props.id);
+  impl_channel_set_src(props.id, props.src);
+
+  const src_observer = new MutationObserver(() => {
+    if (!document.contains(src_floater.frame))
+      src_observer.disconnect();
+    else
+      update_src(props.id);
   });
-  label_observer.observe(channels, { childList: true });
+  src_observer.observe(input_list, { childList: true, subtree: true });
 
-  channels.appendChild(channel);
-
-  const delete_button = document.createElement("button");
-  channel.appendChild(delete_button);
-
-  delete_button.innerHTML = "delete";
-  delete_button.onclick = () => {
-    if (!confirm("confirm delete"))
-      return;
-    rpc.channel_delete(props.id);
-    channel.remove();
-  };
-
-  const src = document.createElement("select");
-  channel.appendChild(src);
-
+  /*
   src.id = `${props.id}_src`;
   src.innerHTML = src_list.innerHTML;
   const src_observer = new MutationObserver(() => {
@@ -165,11 +220,11 @@ const impl_channel_new = (id, props) => {
 const impl_mixer_set_port = (id, idx, path) => {
   const node_div = document.getElementById(`${id}_port_${idx}_node`);
   const path_div = document.getElementById(`${id}_port_${idx}_path`);
-  const port = document.getElementById(path);
   if (path === "") {
     node_div.innerHTML = "no sink";
     path_div.innerHTML = `select output ${idx ? "R" : "L"}`;
   } else {
+    const port = document.getElementById(path);
     if (port === null) {
       node_div.innerHTML = "unknown sink";
       node_div.innerHTML = "unknown output";
@@ -184,7 +239,7 @@ const impl_mixer_set_port = (id, idx, path) => {
   document.getElementById(`${id}_port_${idx}_${path}`).classList.add("active");
 }
 
-const output_ports = document.getElementById("output_ports");
+const output_list = document.getElementById("output_ports");
 const update_port = (id, idx) => {
   const port = document.getElementById(`${id}_port_${idx}`);
   port.innerHTML = "";
@@ -199,7 +254,7 @@ const update_port = (id, idx) => {
     history.back();
   }
 
-  [...output_ports.childNodes].forEach((group) => {
+  [...output_list.childNodes].forEach((group) => {
     const node = document.createElement("div");
     port.appendChild(node);
     node.innerHTML = group.title;
@@ -299,7 +354,7 @@ const impl_mixer_new = (props) => {
       else
         update_port(props.id, idx);
     });
-    port_observer.observe(output_ports, { childList: true });
+    port_observer.observe(output_list, { childList: true });
   }
 
   const mixer_console = document.createElement("div");
@@ -435,12 +490,7 @@ rpc.register("channel_delete", (id) => {
   const channel = document.getElementById(id);
   channel.remove();
 });
-/*
-rpc.register("channel_set_src", (id, val) => {
-  const src = document.getElementById(`${id}_src`);
-  src.value = val;
-});
-*/
+rpc.register("channel_set_src", impl_channel_set_src);
 rpc.register("channel_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);
   gain.value = val;

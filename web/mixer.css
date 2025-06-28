@@ -111,3 +111,26 @@
   text-align: center;
   line-height: 250%;
 }
+
+.channel-src {
+  display: flex;
+  height: 10%;
+  width: 100%;
+  justify-content: space-evenly;
+}
+.channel-src-select {
+  padding-left: calc(100% * var(--padding-width));
+  padding-right: calc(100% * var(--padding-width));
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  background: transparent;
+  text-align: left;
+}
+.channel-src-select div {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis "...";
+}

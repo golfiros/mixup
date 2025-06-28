@@ -28,11 +28,11 @@ const update_balance = (balance) => {
 const impl_input_set_port = (id, idx, path) => {
   const node_div = document.getElementById(`${id}_port_${idx}_node`);
   const path_div = document.getElementById(`${id}_port_${idx}_path`);
-  const port = document.getElementById(path);
   if (path === "") {
     node_div.innerHTML = "no source";
     path_div.innerHTML = `select input ${idx ? "R" : "L"}`;
   } else {
+    const port = document.getElementById(path);
     if (port === null) {
       node_div.innerHTML = "unknown source";
       node_div.innerHTML = "unknown input";
@@ -85,6 +85,7 @@ const input_list = document.getElementById("input_list");
 const impl_input_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
+  list_elem.name = props.id;
 
   const list_label = document.createElement("button");
   list_elem.appendChild(list_label);
