@@ -49,6 +49,16 @@
   width: 100%;
   overflow: hidden;
 }
+.channel-balance {
+  position: relative;
+  height: 10%;
+  left: calc(100% * var(--padding-width));
+  width: calc(100% *(1 - 2 * var(--padding-width)));
+}
+.channel-balance-slider {
+  height: 100%;
+  width: 100%
+}
 .mixer-channel-slider {
   position: relative;
   height: 100%;
@@ -57,6 +67,7 @@
   direction: rtl;
   writing-mode: vertical-lr;
 }
+.channel-balance-slider::-webkit-slider-thumb,
 .mixer-channel-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -65,27 +76,44 @@
   background: transparent;
   border: none;
 }
+.channel-balance-slider::-moz-range-thumb,
 .mixer-channel-slider::-moz-range-thumb {
   height: 0;
   width: 0;
   background: transparent;
   border: none;
 }
+.channel-balance-slider::-webkit-slider-runnable-track,
 .mixer-channel-slider::-webkit-slider-runnable-track {
   background: transparent;
 }
+.channel-balance-slider::-moz-range-track,
 .mixer-channel-slider::-moz-range-track {
   background: transparent;
 }
 
+.channel-balance-ruler,
 .mixer-channel-ruler {
   position: absolute;
   z-index: 1;
   pointer-events: none;
   top: 0;
   right: 0;
+}
+.channel-balance-ruler {
+  display: flex;
+  justify-content: space-between;
+  height: 30%;
+  width: 100%;
+}
+.mixer-channel-ruler {
   height: 100%;
   width: 30%;
+}
+.channel-balance-ruler div {
+  height: 100%;
+  width: 2px;
+  background: white;
 }
 .mixer-channel-ruler div {
   position: absolute;
@@ -103,6 +131,33 @@
   border-left: 6vw solid white;
   border-top: 1.7vh solid transparent;
   border-bottom: 1.7vh solid transparent;
+}
+.channel-balance-labels {
+  position: absolute;
+  z-index: 2;
+  height: 100%;
+  width: 100%;
+  top: 50%;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.channel-balance-labels div {
+  display: flex;
+  top: 50%;
+  height: 50%;
+  align-items: center;
+}
+
+.mixer-channel-value {
+  position: absolute;
+  z-index: 2;
+  height: calc(100% * 0.125 / 0.75);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: right;
+  pointer-events: none;
 }
 
 .mixer-channel-mute,

@@ -202,7 +202,7 @@ const impl_input_new = (props) => {
   gain_labels.innerHTML = "<div>gain</div>";
 
   const gain_val = document.createElement("div");
-  gain_labels.appendChild(gain_val);
+  gain_labels.insertBefore(gain_val, gain_labels.firstChild);
   gain_val.id = `${props.id}_gain_val`;
 
   const gain = document.createElement("input");

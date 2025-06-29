@@ -11,13 +11,30 @@ const fader_curve_inv = (y) =>
     1 / fader_slope
   ) - 1);
 
+const update_balance = (balance) => {
+  const fraction =
+    (parseFloat(balance.value) - parseFloat(balance.min)) /
+    (parseFloat(balance.max) - parseFloat(balance.min));
+  const start = 100 * Math.min(0.5, fraction);
+  const end = 100 * Math.max(0.5, fraction);
+  balance.style.background = `linear-gradient(to right,
+    var(--color-bg) 0%,
+    var(--color-bg) ${start}%,
+    #46a3b9 ${start}%,
+    #46a3b9 ${end}%,
+    var(--color-bg) ${end}%,
+    var(--color-bg) 100%)`;
+  document.getElementById(`${balance.id}_val`).innerHTML =
+    `${balance.value}${balance.value > 0 ? "R" : balance.value < 0 ? "L" : "C"}`;
+}
 const update_gain = (gain) => {
   gain.style.background = `linear-gradient(to top,
     #12a119 0%,
     #12a119 ${gain.value}%,
     var(--color-bg) ${gain.value}%,
     var(--color-bg) 100%)`;
-  //document.getElementById(`${vol.id}_val`).innerHTML = `${parseFloat(vol.value).toFixed(1)}dB`;
+  document.getElementById(`${gain.id}_val`).innerHTML =
+    `${gain.value > 0 ? fader_curve(parseFloat(gain.value) / 100).toFixed(1) : "-Ꝏ "}dB`;
   document.getElementById(`${gain.id}_indicator`).style.bottom = `calc(${gain.value}% - 1.7vh)`;
 }
 
@@ -105,6 +122,11 @@ const impl_channel_new = (id, props) => {
   gain_div.appendChild(gain_indicator);
   gain_indicator.id = `${props.id}_gain_indicator`;
   gain_indicator.classList.add("mixer-channel-indicator");
+
+  const gain_val = document.createElement("div");
+  gain_div.appendChild(gain_val);
+  gain_val.id = `${props.id}_gain_val`;
+  gain_val.classList.add("mixer-channel-value");
 
   const gain = document.createElement("input");
   gain_div.appendChild(gain);
@@ -194,22 +216,46 @@ const impl_channel_new = (id, props) => {
   });
   src_observer.observe(input_list, { childList: true, subtree: true });
 
-  /*
+  const balance_div = document.createElement("div");
+  channel_menu.content.appendChild(balance_div);
+  balance_div.classList.add("channel-balance");
+
+  const balance_ruler = document.createElement("div");
+  balance_div.appendChild(balance_ruler);
+  balance_ruler.classList.add("channel-balance-ruler");
+
+  for (var i = 0; i < 9; i++)
+    balance_ruler.appendChild(document.createElement("div"));
+
+  const balance_labels = document.createElement("div");
+  balance_div.appendChild(balance_labels);
+  balance_labels.classList.add("channel-balance-labels");
+  balance_labels.innerHTML = "<div>balance</div>";
+
+  const balance_val = document.createElement("div");
+  balance_labels.appendChild(balance_val);
+  balance_val.id = `${props.id}_balance_val`;
+
   const balance = document.createElement("input");
-  channel.appendChild(balance);
+  balance_div.appendChild(balance);
+  balance.classList.add("channel-balance-slider");
 
   balance.id = `${props.id}_balance`;
   balance.type = "range";
   balance.min = -100;
   balance.max = 100;
   balance.value = props.balance;
-  balance.oninput = balance.onchange = () =>
-    rpc.channel_set_balance(props.id, Number(balance.value))
+  update_balance(balance);
+  balance.oninput = balance.onchange = () => {
+    if (Math.abs(balance.value) < 5)
+      balance.value = 0;
+    rpc.channel_set_balance(props.id, parseFloat(balance.value))
       .then((res) => {
         if (res !== null)
           balance.value = res;
       });
-  */
+    update_balance(balance);
+  }
 };
 
 const impl_mixer_set_port = (id, idx, path) => {
@@ -435,6 +481,11 @@ const impl_mixer_new = (props) => {
   master_div.appendChild(master_indicator);
   master_indicator.id = `${props.id}_master_indicator`;
   master_indicator.classList.add("mixer-channel-indicator");
+
+  const master_val = document.createElement("div");
+  master_div.appendChild(master_val);
+  master_val.id = `${props.id}_master_val`;
+  master_val.classList.add("mixer-channel-value");
 
   const master_vol = document.createElement("input");
   master_div.appendChild(master_vol);

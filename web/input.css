@@ -71,10 +71,10 @@
   display: flex;
   justify-content: space-between;
   pointer-events: none;
-}
-.input-balance-ruler {
   top: 0;
   right: 0;
+}
+.input-balance-ruler {
   height: 30%;
   width: 100%;
 }
@@ -85,8 +85,6 @@
 }
 .input-gain-ruler {
   flex-direction: column;
-  top: 0;
-  right: 0;
   height: 100%;
   width: 30%;
 }
