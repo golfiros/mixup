@@ -6,6 +6,7 @@
 
 struct input {
   char *id;
+  char *name;
   char *port[2];
   double gain, balance;
 
@@ -20,6 +21,7 @@ void print_input(FILE *, va_list *);
 void input_new(void *);
 void input_delete(void *);
 void input_set_index(void *);
+void input_set_name(void *);
 void input_set_port(void *);
 void input_set_gain(void *);
 void input_set_balance(void *);

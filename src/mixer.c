@@ -3,7 +3,6 @@
 #include "input.h"
 #include "map.h"
 #include "vector.h"
-#include <assert.h>
 #include <string.h>
 
 #define RPC_PRINT_TYPES                                                        \
@@ -12,10 +11,11 @@
 
 void print_mixer(FILE *fp, va_list *ap) {
   struct mixer *mixer = va_arg(*ap, typeof(mixer));
-  fprintf(
-      fp,
-      "{\"id\":\"%s\",\"port\":[\"%s\",\"%s\"],\"master\":%f,\"channels\":[",
-      mixer->id, mixer->port[0], mixer->port[1], mixer->master);
+  fprintf(fp,
+          "{\"id\":\"%s\",\"name\":\"%s\",\"port\":[\"%s\",\"%s\"],\"master\":%"
+          "f,\"channels\":[",
+          mixer->id, mixer->name, mixer->port[0], mixer->port[1],
+          mixer->master);
   for (size_t c = 0; c < mixer->channels.n; c++) {
     struct channel *channel = mixer->channels.data[c];
     if (c)
@@ -27,11 +27,11 @@ void print_mixer(FILE *fp, va_list *ap) {
 
 void print_channel(FILE *fp, va_list *ap) {
   struct channel *channel = va_arg(*ap, typeof(channel));
-  fprintf(
-      fp,
-      "{\"id\":\"%s\",\"src\":\"%s\",\"gain\":%f,\"balance\":%f,\"mute\":%s}",
-      channel->id, channel->src, channel->gain, channel->balance,
-      channel->mute ? "true" : "false");
+  fprintf(fp,
+          "{\"id\":\"%s\",\"name\":\"%s\",\"src\":\"%s\",\"gain\":%f,"
+          "\"balance\":%f,\"mute\":%s}",
+          channel->id, channel->name, channel->src, channel->gain,
+          channel->balance, channel->mute ? "true" : "false");
 }
 
 static inline void _update_vol(struct mixer *mixer, size_t c) {
@@ -61,6 +61,7 @@ RPC_DEFN(mixer_new) {
                            .type = MIXUP_MIXER,
                            .ptr = mixer,
                        }),
+      .name = strdup("# mixer"),
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
 
       .buffer = malloc(0),
@@ -117,6 +118,21 @@ RPC_DEFN(mixer_set_index, (char *, id), (long, idx)) {
   struct mixer *mixer = obj->ptr;
   core_cbk(data->core, impl_mixer_set_index, mixer, idx);
   rpc_relay("mixer_set_index", id, idx);
+  free(id);
+  rpc_return();
+}
+
+RPC_DEFN(mixer_set_name, (char *, id), (char *, name)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_MIXER) {
+    free(id);
+    rpc_err(-32602, "Provided object is not a mixer");
+  }
+  struct mixer *mixer = obj->ptr;
+  free(mixer->name);
+  mixer->name = name;
+  rpc_relay("mixer_set_name", id, name);
   free(id);
   rpc_return();
 }
@@ -211,6 +227,7 @@ RPC_DEFN(channel_new, (char *, id)) {
                            .type = MIXUP_CHANNEL,
                            .ptr = channel,
                        }),
+      .name = strdup("# channel"),
       .src = strdup(MAP_ID_NULL),
       .mute = true,
 
@@ -242,6 +259,21 @@ RPC_DEFN(channel_delete, (char *, id)) {
   core_cbk(data->core, impl_channel_delete, channel);
   rpc_relay("channel_delete", id);
   map_remove(data->map, id);
+  free(id);
+  rpc_return();
+}
+
+RPC_DEFN(channel_set_name, (char *, id), (char *, name)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_CHANNEL) {
+    free(id);
+    rpc_err(-32602, "Provided object is not a channel");
+  }
+  struct channel *channel = obj->ptr;
+  free(channel->name);
+  channel->name = name;
+  rpc_relay("channel_set_name", id, name);
   free(id);
   rpc_return();
 }

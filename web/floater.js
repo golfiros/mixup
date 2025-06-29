@@ -7,11 +7,6 @@ const floater_new = window.floater_new = (id) => {
   frame.appendChild(border);
   border.classList.add("floater-border");
 
-  frame.onclick = (ev) => {
-    if (!border.contains(ev.target))
-      history.back();
-  }
-
   const header = document.createElement("div");
   border.appendChild(header);
   header.classList.add("floater-header");
@@ -32,7 +27,10 @@ const floater_new = window.floater_new = (id) => {
   const floater = {};
   Object.defineProperty(floater, "frame", { value: frame });
   Object.defineProperty(floater, "content", { value: content });
-  Object.defineProperty(floater, "title", { set: (text) => title.innerHTML = text });
+  Object.defineProperty(floater, "title", {
+    set: (text) => title.innerHTML = text,
+    get: () => title,
+  });
   Object.defineProperty(floater, "show", {
     value: () => {
       var state = history.state;

@@ -118,20 +118,36 @@ const impl_input_new = (props) => {
   document.getElementById("content").appendChild(input);
   input.hidden = true;
   input.id = props.id;
-  input.name = "# input";
   input.classList.add("content");
+
+  const name = document.createElement("input");
+  name.id = `${props.id}_name`;
+  name.type = "text";
+  name.value = props.name;
+  name.classList.add("content-title");
 
   const label = document.createElement("div");
   input.appendChild(label);
+  label.id = `${props.id}_label`;
   label.classList.add("content-title");
+  label.onclick = () => {
+    label.replaceWith(name)
+    name.focus();
+  };
+
+  name.onchange = name.onblur = () => {
+    name.replaceWith(label);
+    const idx = [...input_list.childNodes].indexOf(list_elem);
+    list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
+    rpc.input_set_name(props.id, name.value);
+  }
 
   const label_observer = new MutationObserver(() => {
     if (!document.contains(input))
       label_observer.disconnect();
     else {
       const idx = [...input_list.childNodes].indexOf(list_elem);
-      const name = idx >= 0 ? input.name.replace("#", idx + 1) : input.name;
-      list_label.innerHTML = label.innerHTML = name;
+      list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
     }
   });
   label_observer.observe(input_list, { childList: true });
@@ -283,7 +299,14 @@ rpc.register("input_set_index", (id, idx) => {
   const elem = document.getElementById(`${id}_elem`);
   input_list.appendChild(elem);
   input_list.insertBefore(elem, input_list.childNodes[idx]);
-})
+});
+rpc.register("input_set_name", (id, name) => {
+  const label = document.getElementById(`${id}_label`);
+  label.dispatchEvent(new Event("click"));
+  const elem = document.getElementById(`${id}_name`);
+  elem.value = name;
+  elem.dispatchEvent(new Event("blur"));
+});
 rpc.register("input_set_port", impl_input_set_port);
 rpc.register("input_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);

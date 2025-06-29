@@ -145,34 +145,53 @@ const impl_channel_new = (id, props) => {
     update_gain(gain);
   }
 
-  const channel_mute = document.createElement("button");
-  channel.appendChild(channel_mute);
-  channel_mute.classList.add("mixer-channel-mute");
-  channel_mute.innerHTML = "M";
-  channel_mute.onclick = () => {
-    channel_mute.classList.toggle("active");
-    const mute = channel_mute.classList.contains("active");
-    rpc.channel_set_mute(props.id, mute);
+  const mute = document.createElement("button");
+  channel.appendChild(mute);
+  mute.id = `${props.id}_mute`;
+  mute.classList.add("mixer-channel-mute");
+  mute.innerHTML = "M";
+  mute.onclick = () => {
+    mute.classList.toggle("active");
+    const mute_val = mute.classList.contains("active");
+    rpc.channel_set_mute(props.id, mute_val);
   }
   if (props.mute)
-    channel_mute.classList.add("active");
+    mute.classList.add("active");
 
-  const channel_label = document.createElement("button");
-  channel.appendChild(channel_label);
-  channel_label.classList.add("mixer-channel-label");
-  channel_label.innerHTML = channel.name;
+  const name = document.createElement("input");
+  name.id = `${props.id}_name`;
+  name.type = "text";
+  name.value = props.name;
+  name.classList.add("content-title");
 
-  const channel_menu = floater_new(`${props.id}_menu`);
-  channel_div.appendChild(channel_menu.frame);
-  channel_label.onclick = channel_menu.show;
+  const label = document.createElement("button");
+  channel.appendChild(label);
+  label.classList.add("mixer-channel-label");
+  label.innerHTML = channel.name;
+
+  const menu = floater_new(`${props.id}_menu`);
+  channel_div.appendChild(menu.frame);
+  menu.title.id = `${props.id}_label`;
+  menu.title.onclick = () => {
+    menu.title.replaceWith(name);
+    name.focus();
+  }
+
+  name.onchange = name.onblur = () => {
+    name.replaceWith(menu.title);
+    const idx = [...channels.childNodes].indexOf(channel_div);
+    menu.title = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
+    rpc.channel_set_name(props.id, name.value);
+  }
+
+  label.onclick = menu.show;
 
   const label_observer = new MutationObserver(() => {
     if (!document.contains(channel_div))
       label_observer.disconnect();
     else {
       const idx = [...channels.childNodes].indexOf(channel_div);
-      const name = channel_div.name.replace("#", idx + 1);
-      channel_menu.title = channel_label.innerHTML = name;
+      menu.title = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
     }
   });
   label_observer.observe(channels, { childList: true });
@@ -190,7 +209,7 @@ const impl_channel_new = (id, props) => {
   };
 
   const src_div = document.createElement("div");
-  channel_menu.content.appendChild(src_div);
+  menu.content.appendChild(src_div);
   src_div.classList.add("channel-src");
 
   const src_button = document.createElement("button")
@@ -200,16 +219,16 @@ const impl_channel_new = (id, props) => {
     `<div id="${props.id}_src_type"></div>` +
     `<div id="${props.id}_src_obj"></div>`;
 
-  const src_floater = floater_new(`${props.id}_src`);
-  src_div.appendChild(src_floater.frame);
-  src_floater.content.classList.add("port-list");
-  src_button.onclick = src_floater.show;
-  src_floater.title = `select source`;
+  const src = floater_new(`${props.id}_src`);
+  src_div.appendChild(src.frame);
+  src.content.classList.add("port-list");
+  src_button.onclick = src.show;
+  src.title = `select source`;
   update_src(props.id);
   impl_channel_set_src(props.id, props.src);
 
   const src_observer = new MutationObserver(() => {
-    if (!document.contains(src_floater.frame))
+    if (!document.contains(src.frame))
       src_observer.disconnect();
     else
       update_src(props.id);
@@ -217,7 +236,7 @@ const impl_channel_new = (id, props) => {
   src_observer.observe(input_list, { childList: true, subtree: true });
 
   const balance_div = document.createElement("div");
-  channel_menu.content.appendChild(balance_div);
+  menu.content.appendChild(balance_div);
   balance_div.classList.add("channel-balance");
 
   const balance_ruler = document.createElement("div");
@@ -344,20 +363,36 @@ const impl_mixer_new = (props) => {
   document.getElementById("content").appendChild(mixer);
   mixer.hidden = true;
   mixer.id = props.id;
-  mixer.name = "# mixer";
   mixer.classList.add("content");
+
+  const name = document.createElement("input");
+  name.id = `${props.id}_name`;
+  name.type = "text";
+  name.value = props.name;
+  name.classList.add("content-title");
 
   const label = document.createElement("div");
   mixer.appendChild(label);
+  label.id = `${props.id}_label`;
   label.classList.add("content-title");
+  label.onclick = () => {
+    label.replaceWith(name)
+    name.focus();
+  };
+
+  name.onchange = name.onblur = () => {
+    name.replaceWith(label);
+    const idx = [...mixer_list.childNodes].indexOf(list_elem);
+    list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
+    rpc.mixer_set_name(props.id, name.value);
+  }
 
   const label_observer = new MutationObserver(() => {
     if (!document.contains(mixer))
       label_observer.disconnect();
     else {
       const idx = [...mixer_list.childNodes].indexOf(list_elem);
-      const name = idx >= 0 ? mixer.name.replace("#", idx + 1) : mixer.name;
-      list_label.innerHTML = label.innerHTML = name;
+      list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
     }
   });
   label_observer.observe(mixer_list, { childList: true });
@@ -536,7 +571,14 @@ rpc.register("mixer_set_index", (id, idx) => {
   const elem = document.getElementById(`${id}_elem`);
   mixer_list.appendChild(elem);
   mixer_list.insertBefore(elem, mixer_list.childNodes[idx]);
-})
+});
+rpc.register("mixer_set_name", (id, name) => {
+  const label = document.getElementById(`${id}_label`);
+  label.dispatchEvent(new Event("click"));
+  const elem = document.getElementById(`${id}_name`);
+  elem.value = name;
+  elem.dispatchEvent(new Event("blur"));
+});
 rpc.register("mixer_set_port", impl_mixer_set_port);
 rpc.register("mixer_set_master", (id, val) => {
   const master = document.getElementById(`${id}_master`);
@@ -549,12 +591,23 @@ rpc.register("channel_delete", (id) => {
   const channel = document.getElementById(id);
   channel.remove();
 });
+rpc.register("channel_set_name", (id, name) => {
+  const label = document.getElementById(`${id}_label`);
+  label.dispatchEvent(new Event("click"));
+  const elem = document.getElementById(`${id}_name`);
+  elem.value = name;
+  elem.dispatchEvent(new Event("blur"));
+});
 rpc.register("channel_set_src", impl_channel_set_src);
 rpc.register("channel_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);
   gain.value = 100 * fader_curve_inv(val);
   update_gain(gain);
 });
+rpc.register("channel_set_mute", (id, val) => {
+  const mute = document.getElementById(`${id}_mute`);
+  mute.classList[val ? "add" : "remove"]("active");
+})
 /*
 rpc.register("channel_set_balance", (id, val) => {
   const balance = document.getElementById(`${id}_balance`);

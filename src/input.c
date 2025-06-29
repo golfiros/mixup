@@ -13,9 +13,11 @@
 
 void print_input(FILE *fp, va_list *ap) {
   struct input *input = va_arg(*ap, typeof(input));
-  fprintf(
-      fp, "{\"id\":\"%s\",\"port\":[\"%s\",\"%s\"],\"gain\":%f,\"balance\":%f}",
-      input->id, input->port[0], input->port[1], input->gain, input->balance);
+  fprintf(fp,
+          "{\"id\":\"%s\",\"name\":\"%s\",\"port\":[\"%s\",\"%s\"],\"gain\":%f,"
+          "\"balance\":%f}",
+          input->id, input->name, input->port[0], input->port[1], input->gain,
+          input->balance);
 }
 
 static inline void _update_vol(struct input *input) {
@@ -42,6 +44,7 @@ RPC_DEFN(input_new) {
                            .type = MIXUP_INPUT,
                            .ptr = input,
                        }),
+      .name = strdup("# input"),
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
 
       .buffer = malloc(0),
@@ -96,6 +99,21 @@ RPC_DEFN(input_set_index, (char *, id), (long, idx)) {
   struct input *input = obj->ptr;
   core_cbk(data->core, impl_input_set_index, input, idx);
   rpc_relay("input_set_index", id, idx);
+  free(id);
+  rpc_return();
+}
+
+RPC_DEFN(input_set_name, (char *, id), (char *, name)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_INPUT) {
+    free(id);
+    rpc_err(-32602, "Provided object is not an input");
+  }
+  struct input *input = obj->ptr;
+  free(input->name);
+  input->name = name;
+  rpc_relay("input_set_name", id, name);
   free(id);
   rpc_return();
 }

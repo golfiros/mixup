@@ -33,7 +33,7 @@
   justify-content: space-between;
   background: var(--color-hl1);
 }
-.floater-header div {
+.floater-header * {
   display: flex;
   height: 100%;
   align-items: center;
