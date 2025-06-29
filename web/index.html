@@ -156,7 +156,7 @@
     }
 
     .port-list {
-      overflow-y: auto;
+      overflow-y: scroll;
     }
     .port-list div {
       padding-left: calc(100% * var(--padding-width));
@@ -252,24 +252,27 @@
       refresh();
     };
     const list = document.getElementById(`${type}_list`);
-    var x, x0, y, y0, t0;
-    var drag = false, swipe = false, move = false, floating = false;
+    var x, x0, y, y0, id = null;
+    var drag = false, swipe = false, floating = false;
     var item = null;
     list.ontouchstart = (ev) => {
-      if (!ev.target.classList.contains("vertical-menu-item"))
+      if (!ev.target.classList.contains("vertical-menu-item") || id !== null)
         return;
-      x = x0 = ev.touches[0].clientX;
-      y = y0 = ev.touches[0].clientY;
-      t0 = Date.now();
+
+      x = x0 = ev.changedTouches[0].clientX;
+      y = y0 = ev.changedTouches[0].clientY;
+      id = ev.changedTouches[0].identifier;
+
       drag = true;
       swipe = false;
-      move = false;
+      floating = true;
+
       item = ev.target;
       setTimeout(() => {
-        if (move)
+        if (!floating)
           return;
+
         drag = false;
-        floating = true;
         item = item.parentNode;
         const coords = item.getBoundingClientRect();
 
@@ -303,8 +306,12 @@
         item.style.opacity = "70%";
         const onmove = (ev) => {
           ev.preventDefault();
-          x = ev.touches[0].clientX;
-          y = ev.touches[0].clientY;
+
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          x = touch.clientX;
+          y = touch.clientY;
 
           const dx = x - x0, dy = y - y0;
 
@@ -324,26 +331,35 @@
               under.style.borderTop = "2px solid white";
           }
         }
-        document.body.addEventListener("touchmove", onmove, { passive: false });
-        document.body.ontouchend = () => {
+        item.addEventListener("touchmove", onmove, { passive: false });
+        item.ontouchend = (ev) => {
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          id = null;
           list.insertBefore(item, list.childNodes[idx]);
           item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
           floating = false;
           under.style = "";
           item.style = "";
+          item.removeEventListener("touchmove", onmove, { passive: false });
+          item.ontouchend = null;
           item = null;
-          document.body.removeEventListener("touchmove", onmove, { passive: false });
-          document.body.ontouchend = null;
         };
       }, 600);
     }
     list.addEventListener("touchmove", (ev) => {
-      move = true;
       if (!drag)
         return;
 
-      x = ev.touches[0].clientX;
-      y = ev.touches[0].clientY;
+      const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+      if (touch === undefined)
+        return;
+
+      floating = false;
+
+      x = touch.clientX;
+      y = touch.clientY;
 
       const dx = x - x0, dy = y - y0;
 
@@ -361,11 +377,17 @@
         item.style.transform = `translateX(${dx > 0 ? Math.min(dx, 0.4 * list.offsetWidth) : 0}px)`;
       }
     }, { passive: false } );
-    list.ontouchend = () => {
-      move = true;
+    list.ontouchend = (ev) => {
       if (!item)
         return;
 
+      const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+      if (touch === undefined)
+        return;
+
+      floating = false;
+
+      id = null;
       drag = false;
 
       const dx = x - x0;

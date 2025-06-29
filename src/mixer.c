@@ -263,6 +263,31 @@ RPC_DEFN(channel_delete, (char *, id)) {
   rpc_return();
 }
 
+CBK_DEFN(impl_channel_set_index, (struct channel *, channel), (size_t, idx)) {
+  struct mixer *mixer = channel->mixer;
+  size_t idx_old = vec_idx(mixer->channels, == channel);
+  float2 **temp = mixer->sources[idx_old];
+  mixer->sources[idx_old] = mixer->sources[idx];
+  mixer->sources[idx] = temp;
+  vec_delete(&mixer->channels, idx_old);
+  vec_insert(&mixer->channels, idx, channel);
+  for (size_t c = 0; c < mixer->channels.n; c++)
+    _update_vol(mixer, c);
+}
+RPC_DEFN(channel_set_index, (char *, id), (long, idx)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_CHANNEL) {
+    free(id);
+    rpc_err(-32602, "Provided object is not a channel");
+  }
+  struct channel *channel = obj->ptr;
+  core_cbk(data->core, impl_channel_set_index, channel, idx);
+  rpc_relay("channel_set_index", id, idx);
+  free(id);
+  rpc_return();
+}
+
 RPC_DEFN(channel_set_name, (char *, id), (char *, name)) {
   struct data *data = rpc_data();
   struct obj *obj = map_get(data->map, id);

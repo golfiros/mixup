@@ -41,6 +41,7 @@ void mixer_set_master(void *);
 
 void channel_new(void *);
 void channel_delete(void *);
+void channel_set_index(void *);
 void channel_set_name(void *);
 void channel_set_src(void *);
 void channel_set_gain(void *);

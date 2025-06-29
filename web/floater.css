@@ -47,6 +47,5 @@
 .floater-content {
   height: calc(100% * (1 - var(--title-height)));
   width: 100%;
-  overflow: hidden;
 }
 

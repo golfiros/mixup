@@ -160,6 +160,7 @@ int main(int, char **) {
 
   srv_reg(data.srv, channel_new, "channel_new");
   srv_reg(data.srv, channel_delete, "channel_delete");
+  srv_reg(data.srv, channel_set_index, "channel_set_index");
   srv_reg(data.srv, channel_set_name, "channel_set_name");
   srv_reg(data.srv, channel_set_src, "channel_set_src");
   srv_reg(data.srv, channel_set_gain, "channel_set_gain");
