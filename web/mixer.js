@@ -607,10 +607,9 @@ rpc.register("channel_set_gain", (id, val) => {
 rpc.register("channel_set_mute", (id, val) => {
   const mute = document.getElementById(`${id}_mute`);
   mute.classList[val ? "add" : "remove"]("active");
-})
-/*
+});
 rpc.register("channel_set_balance", (id, val) => {
   const balance = document.getElementById(`${id}_balance`);
   balance.value = val;
+  update_balance(balance);
 });
-*/

@@ -341,7 +341,7 @@ RPC_DEFN(channel_set_balance, (char *, id), (double, balance)) {
   struct channel *channel = obj->ptr;
   channel->balance = fmax(-MAX_BAL, fmin(MAX_BAL, balance));
   core_cbk(data->core, impl_channel_update_vol, channel);
-  rpc_relay("channel_set_gain", id, channel->gain);
+  rpc_relay("channel_set_balance", id, channel->balance);
   free(id);
   if (balance != channel->balance)
     rpc_return(channel->balance);

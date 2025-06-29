@@ -382,7 +382,11 @@
 
   rpc.register("done", () => {
     refresh();
-    floater_init(history.state);
+    try {
+      floater_init(history.state);
+    } catch {
+      history.replaceState(null, "");
+    }
   });
 
   rpc.init();
