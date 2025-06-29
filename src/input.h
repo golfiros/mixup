@@ -19,6 +19,7 @@ void print_input(FILE *, va_list *);
 // RPCs
 void input_new(void *);
 void input_delete(void *);
+void input_set_index(void *);
 void input_set_port(void *);
 void input_set_gain(void *);
 void input_set_balance(void *);

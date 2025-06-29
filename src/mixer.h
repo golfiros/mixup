@@ -32,6 +32,7 @@ void print_channel(FILE *, va_list *);
 // RPCs
 void mixer_new(void *);
 void mixer_delete(void *);
+void mixer_set_index(void *);
 void mixer_set_port(void *);
 void mixer_set_master(void *);
 

@@ -318,6 +318,8 @@ const mixer_list = document.getElementById("mixer_list");
 const impl_mixer_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
+  list_elem.addEventListener("itemdrop", (ev) => rpc.mixer_set_index(props.id, ev.detail.idx));
+  list_elem.name = props.id;
 
   const list_label = document.createElement("button");
   list_elem.appendChild(list_label);
@@ -354,7 +356,7 @@ const impl_mixer_new = (props) => {
       label_observer.disconnect();
     else {
       const idx = [...mixer_list.childNodes].indexOf(list_elem);
-      const name = mixer.name.replace("#", idx + 1);
+      const name = idx >= 0 ? mixer.name.replace("#", idx + 1) : mixer.name;
       list_label.innerHTML = label.innerHTML = name;
     }
   });
@@ -530,6 +532,11 @@ rpc.register("mixer_delete", (id) => {
   mixer.remove();
   refresh();
 });
+rpc.register("mixer_set_index", (id, idx) => {
+  const elem = document.getElementById(`${id}_elem`);
+  mixer_list.appendChild(elem);
+  mixer_list.insertBefore(elem, mixer_list.childNodes[idx]);
+})
 rpc.register("mixer_set_port", impl_mixer_set_port);
 rpc.register("mixer_set_master", (id, val) => {
   const master = document.getElementById(`${id}_master`);

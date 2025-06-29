@@ -43,8 +43,8 @@
     }                                                                          \
                                                                                \
     if (ret) {                                                                 \
-      for (ptrdiff_t i = _vec->n++; i > _idx; i--)                             \
-        _vec->data[i + 1] = _vec->data[i];                                     \
+      for (ptrdiff_t i = _vec->n++; i > (ptrdiff_t)_idx; i--)                  \
+        _vec->data[i] = _vec->data[i - 1];                                     \
       _vec->data[_idx] = _item;                                                \
     }                                                                          \
     ret;                                                                       \

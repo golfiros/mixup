@@ -3,6 +3,7 @@
 #include "input.h"
 #include "map.h"
 #include "vector.h"
+#include <assert.h>
 #include <string.h>
 
 #define RPC_PRINT_TYPES                                                        \
@@ -97,6 +98,25 @@ RPC_DEFN(mixer_delete, (char *, id)) {
   core_cbk(data->core, impl_mixer_delete, mixer);
   rpc_relay("mixer_delete", id);
   map_remove(data->map, id);
+  free(id);
+  rpc_return();
+}
+
+CBK_DEFN(impl_mixer_set_index, (struct mixer *, mixer), (size_t, idx)) {
+  struct data *data = cbk_data();
+  vec_delete(&data->mixers, vec_idx(data->mixers, == mixer));
+  vec_insert(&data->mixers, idx, mixer);
+}
+RPC_DEFN(mixer_set_index, (char *, id), (long, idx)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_MIXER) {
+    free(id);
+    rpc_err(-32602, "Provided object is not a mixer");
+  }
+  struct mixer *mixer = obj->ptr;
+  core_cbk(data->core, impl_mixer_set_index, mixer, idx);
+  rpc_relay("mixer_set_index", id, idx);
   free(id);
   rpc_return();
 }

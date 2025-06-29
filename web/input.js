@@ -92,6 +92,7 @@ const input_list = document.getElementById("input_list");
 const impl_input_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
+  list_elem.addEventListener("itemdrop", (ev) => rpc.input_set_index(props.id, ev.detail.idx));
   list_elem.name = props.id;
 
   const list_label = document.createElement("button");
@@ -129,7 +130,7 @@ const impl_input_new = (props) => {
       label_observer.disconnect();
     else {
       const idx = [...input_list.childNodes].indexOf(list_elem);
-      const name = input.name.replace("#", idx + 1);
+      const name = idx >= 0 ? input.name.replace("#", idx + 1) : input.name;
       list_label.innerHTML = label.innerHTML = name;
     }
   });
@@ -278,6 +279,11 @@ rpc.register("input_delete", (id) => {
   input.remove();
   refresh();
 });
+rpc.register("input_set_index", (id, idx) => {
+  const elem = document.getElementById(`${id}_elem`);
+  input_list.appendChild(elem);
+  input_list.insertBefore(elem, input_list.childNodes[idx]);
+})
 rpc.register("input_set_port", impl_input_set_port);
 rpc.register("input_set_gain", (id, val) => {
   const gain = document.getElementById(`${id}_gain`);

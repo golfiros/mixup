@@ -1,6 +1,7 @@
 #include "input.h"
 #include "core.h"
 #include "map.h"
+#include "vector.h"
 #include <string.h>
 
 #define INPUT_MIN_GAIN -24.0
@@ -76,6 +77,25 @@ RPC_DEFN(input_delete, (char *, id)) {
   core_cbk(data->core, impl_input_delete, input);
   rpc_relay("input_delete", id);
   map_remove(data->map, id);
+  free(id);
+  rpc_return();
+}
+
+CBK_DEFN(impl_input_set_index, (struct input *, input), (size_t, idx)) {
+  struct data *data = cbk_data();
+  vec_delete(&data->inputs, vec_idx(data->inputs, == input));
+  vec_insert(&data->inputs, idx, input);
+}
+RPC_DEFN(input_set_index, (char *, id), (long, idx)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_INPUT) {
+    free(id);
+    rpc_err(-32602, "Provided object is not an input");
+  }
+  struct input *input = obj->ptr;
+  core_cbk(data->core, impl_input_set_index, input, idx);
+  rpc_relay("input_set_index", id, idx);
   free(id);
   rpc_return();
 }

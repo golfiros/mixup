@@ -145,12 +145,14 @@ int main(int, char **) {
 
   srv_reg(data.srv, input_new, "input_new");
   srv_reg(data.srv, input_delete, "input_delete");
+  srv_reg(data.srv, input_set_index, "input_set_index");
   srv_reg(data.srv, input_set_port, "input_set_port");
   srv_reg(data.srv, input_set_gain, "input_set_gain");
   srv_reg(data.srv, input_set_balance, "input_set_balance");
 
   srv_reg(data.srv, mixer_new, "mixer_new");
   srv_reg(data.srv, mixer_delete, "mixer_delete");
+  srv_reg(data.srv, mixer_set_index, "mixer_set_index");
   srv_reg(data.srv, mixer_set_port, "mixer_set_port");
   srv_reg(data.srv, mixer_set_master, "mixer_set_master");
 

@@ -82,6 +82,7 @@
       background: var(--color-bg);
       text-align: left;
       padding-left: calc(100% * var(--padding-width));
+      list-style-type: none;
     }
     .vertical-menu-item.active {
       background: var(--color-hl2);
@@ -251,7 +252,7 @@
     };
     const list = document.getElementById(`${type}_list`);
     var x, x0, y, y0, t0;
-    var drag = false, swipe = false;
+    var drag = false, swipe = false, move = false, floating = false;
     var item = null;
     list.ontouchstart = (ev) => {
       if (!ev.target.classList.contains("vertical-menu-item"))
@@ -261,9 +262,82 @@
       t0 = Date.now();
       drag = true;
       swipe = false;
+      move = false;
       item = ev.target;
-    };
+      setTimeout(() => {
+        if (move)
+          return;
+        drag = false;
+        floating = true;
+        item = item.parentNode;
+        const coords = item.getBoundingClientRect();
+
+        var idx = [...list.childNodes].indexOf(item);
+        document.body.appendChild(item);
+
+        var under = idx < list.childNodes.length? list.childNodes[idx] : list.lastChild;
+        if (idx < list.childNodes.length) 
+          under.style.borderTop = "2px solid white";
+        else
+          under.style.borderBottom = "2px solid white";
+
+        const list_scroll = () => {
+          const coords = list.getBoundingClientRect();
+          const r = Math.min(Math.max((y - coords.y) / coords.height, 0), 1);
+          if (r < 0.15) 
+            list.scrollBy(0, -(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" });
+          if (r > 0.85) 
+            list.scrollBy(0, 1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" });
+          if (floating)
+            setTimeout(list_scroll, 10)
+        }
+        list_scroll();
+
+        item.style.position = "fixed";
+        item.style.height = `${coords.height}px`;
+        item.style.width = `${coords.width}px`;
+        item.style.left = `${coords.x}px`;
+        item.style.top = `${coords.y}px`;
+        item.style.zIndex = 500;
+        item.style.opacity = "70%";
+        const onmove = (ev) => {
+          ev.preventDefault();
+          x = ev.touches[0].clientX;
+          y = ev.touches[0].clientY;
+
+          const dx = x - x0, dy = y - y0;
+
+          item.style.transform = `translate(${dx}px, ${dy}px)`;
+
+          const under_new = document.elementsFromPoint(x, y).find((node) => !item.contains(node));
+          if (under_new.classList.contains("vertical-menu-item")) {
+            under.style = "";
+            under = under_new;
+            idx = [...list.childNodes].indexOf(under.parentNode);
+            const coords = under.getBoundingClientRect();
+            if (idx < list.childNodes.length && y - coords.y > coords.height / 2) {
+              under.style.borderBottom = "2px solid white";
+              idx++;
+            }
+            else
+              under.style.borderTop = "2px solid white";
+          }
+        }
+        document.body.addEventListener("touchmove", onmove, { passive: false });
+        document.body.ontouchend = () => {
+          list.insertBefore(item, list.childNodes[idx]);
+          item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
+          floating = false;
+          under.style = "";
+          item.style = "";
+          item = null;
+          document.body.removeEventListener("touchmove", onmove, { passive: false });
+          document.body.ontouchend = null;
+        };
+      }, 600);
+    }
     list.addEventListener("touchmove", (ev) => {
+      move = true;
       if (!drag)
         return;
 
@@ -285,8 +359,9 @@
         ev.preventDefault();
         item.style.transform = `translateX(${dx > 0 ? Math.min(dx, 0.4 * list.offsetWidth) : 0}px)`;
       }
-    }, {passive: false});
+    }, { passive: false } );
     list.ontouchend = () => {
+      move = true;
       if (!item)
         return;
 
@@ -301,7 +376,7 @@
 
       item = null;
       swipe = false;
-    };
+    }
   });
 
   rpc.register("done", () => {
