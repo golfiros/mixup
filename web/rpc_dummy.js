@@ -50,15 +50,7 @@ if (data_str === null) {
   localStorage.setItem("dummy_storage", data_str = JSON.stringify(data));
 }
 
-const data = new Proxy({ data: data_str }, {
-  get: (target, prop) => JSON.parse(target.data)[prop],
-  set: (target, prop, val) => {
-    const data_local = JSON.parse(target.data);
-    data_local[prop] = val;
-    localStorage.setItem("dummy_storage", target.data = JSON.stringify(data_local));
-    return true;
-  },
-});
+const data = JSON.parse(data_str);
 
 const rpc = window.rpc = {
   input_new: () => new Promise((resolve) => {
@@ -70,46 +62,129 @@ const rpc = window.rpc = {
       balance: 0.0,
     };
     data.inputs.push(input);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
     resolve(input);
   }),
-  input_delete: (id) => data.inputs = data.inputs.filter((input) => input.id !== id),
-  input_set_index: (id, idx) => {
-    const idx_old = data.inputs.findIndex((input) => input.id === id);
-    const temp = data.inputs[idx_old];
-    data.inputs[idx_old] = data_inputs[idx];
-    data.inputs[idx] = temp;
+  input_delete: (id) => {
+    data.inputs = data.inputs.filter((input) => input.id !== id);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
   },
-  input_set_name: (id, name) => data.inputs.find((input) => input.id === id).name = name,
-  input_set_port: (id, idx, path) => data.inputs.find((input) => input.id === id).ports[idx] = path,
-  input_set_gain: (id, gain) => data.inputs.find((input) => input.id === id).gain = gain,
-  input_set_balance: (id, balance) => data.inputs.find((input) => input.id === id).balance = balance,
+  input_set_index: (id, idx) => {
+    data.inputs.splice(idx, 0, data.inputs.splice(data.inputs.findIndex((input) => input.id === id), 1)[0]);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  input_set_name: (id, name) => {
+    data.inputs.find((input) => input.id === id).name = name;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  input_set_port: (id, idx, path) => {
+    data.inputs.find((input) => input.id === id).port[idx] = path;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  input_set_gain: (id, gain) => {
+    data.inputs.find((input) => input.id === id).gain = gain;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(gain));
+  },
+  input_set_balance: (id, balance) => {
+    data.inputs.find((input) => input.id === id).balance = balance
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(balance));
+  },
 
-  mixer_new: () => new Promise((resolve) => resolve({
-    id: rand_id(),
-    name: "# mixer",
-    port: ["", ""],
-    master: 0.0,
-    channels: [],
-  })),
-  mixer_delete: () => { },
-  mixer_set_index: () => { },
-  mixer_set_name: () => { },
-  mixer_set_port: () => { },
-  mixer_set_master: () => null,
+  mixer_new: () => new Promise((resolve) => {
+    const mixer = {
+      id: rand_id(),
+      name: "# mixer",
+      port: ["", ""],
+      master: 0.0,
+      channels: [],
+    };
+    data.mixers.push(mixer);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    resolve(mixer);
+  }),
+  mixer_delete: (id) => {
+    data.mixers = data.mixers.filter((mixer) => mixer.id !== id);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  mixer_set_index: (id, idx) => {
+    data.mixers.splice(idx, 0, data.mixers.splice(data.mixers.findIndex((mixer) => mixer.id === id), 1)[0]);
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  mixer_set_name: (id, name) => {
+    data.mixers.find((mixer) => mixer.id === id).name = name;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  mixer_set_port: (id, idx, path) => {
+    data.mixers.find((mixer) => mixer.id === id).port[idx] = path;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  mixer_set_master: (id, master) => {
+    data.mixers.find((mixer) => mixer.id === id).master = master;
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(master));
+  },
 
-  channel_new: () => new Promise((resolve) => resolve({
-    id: rand_id(),
-    name: "# channel",
-    src: "00000000-0000-0000-0000-000000000000",
-    gain: 0.0,
-    balance: 0.0,
-  })),
-  channel_delete: () => { },
-  channel_set_src: () => { },
-  channel_set_index: () => { },
-  channel_set_name: () => { },
-  channel_set_gain: () => null,
-  channel_set_balance: () => null,
+  channel_new: (mix_id) => new Promise((resolve) => {
+    const channel = {
+      id: rand_id(),
+      name: "# channel",
+      src: "00000000-0000-0000-0000-000000000000",
+      gain: 0.0,
+      balance: 0.0,
+    };
+    const mixer = data.mixers.find((mixer) => mixer.id === mix_id);
+    mixer.channels.push(channel);
+    resolve(channel)
+  }),
+  channel_delete: (id) => {
+    data.mixers.forEach((mixer) => mixer.channels.filter((ch) => ch.id !== id));
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  channel_set_index: (id, idx) => {
+    data.mixers.forEach((mixer) => {
+      const idx_old = mixer.channels.findIndex((ch) => ch.id === id);
+      if (idx_old < 0)
+        return;
+      mixer.channels.splice(idx, 0, mixer.channels.splice(idx_old, 1)[0]);
+    });
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  channel_set_name: (id, name) => {
+    data.mixers.forEach((mixer) => {
+      const channel = mixer.channels.find((ch) => ch.id === id);
+      if (channel !== undefined)
+        channel.name = name;
+    });
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  channel_set_src: (id, src) => {
+    data.mixers.forEach((mixer) => {
+      const channel = mixer.channels.find((ch) => ch.id === id);
+      if (channel !== undefined)
+        channel.src = src;
+    });
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+  },
+  channel_set_gain: (id, gain) => {
+    data.mixers.forEach((mixer) => {
+      const channel = mixer.channels.find((ch) => ch.id === id);
+      if (channel !== undefined)
+        channel.gain = gain;
+    });
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(gain));
+  },
+  channel_set_balance: (id, balance) => {
+    data.mixers.forEach((mixer) => {
+      const channel = mixer.channels.find((ch) => ch.id === id);
+      if (channel !== undefined)
+        channel.balance = balance;
+    });
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(balance));
+  },
 
   funcs: {},
   register: (key, val) => rpc.funcs[key] = val,
