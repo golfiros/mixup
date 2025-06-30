@@ -50,85 +50,86 @@ types.forEach((type) => {
     floating = true;
 
     item = ev.target;
-    setTimeout(() => {
-      if (!floating)
-        return;
-
-      drag = false;
-      item = item.parentNode;
-      const coords = item.getBoundingClientRect();
-
-      var idx = [...list.childNodes].indexOf(item);
-      document.body.appendChild(item);
-
-      var under = idx < list.childNodes.length ? list.childNodes[idx] : list.lastChild;
-      if (idx < list.childNodes.length)
-        under.style.borderTop = "2px solid white";
-      else
-        under.style.borderBottom = "2px solid white";
-
-      const list_scroll = () => {
-        const coords = list.getBoundingClientRect();
-        const r = Math.min(Math.max((y - coords.y) / coords.height, 0), 1);
-        if (r < 0.15)
-          list.scrollBy(0, -(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" });
-        if (r > 0.85)
-          list.scrollBy(0, 1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" });
-        if (floating)
-          setTimeout(list_scroll, 10)
-      }
-      list_scroll();
-
-      item.style.position = "fixed";
-      item.style.height = `${coords.height}px`;
-      item.style.width = `${coords.width}px`;
-      item.style.left = `${coords.x}px`;
-      item.style.top = `${coords.y}px`;
-      item.style.zIndex = 500;
-      item.style.opacity = "70%";
-      const onmove = (ev) => {
-        ev.preventDefault();
-
-        const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-        if (touch === undefined)
+    if (list.childNodes.length > 1)
+      setTimeout(() => {
+        if (!floating)
           return;
-        x = touch.clientX;
-        y = touch.clientY;
 
-        const dx = x - x0, dy = y - y0;
+        drag = false;
+        item = item.parentNode;
+        const coords = item.getBoundingClientRect();
 
-        item.style.transform = `translate(${dx}px, ${dy}px)`;
+        var idx = [...list.childNodes].indexOf(item);
+        document.body.appendChild(item);
 
-        const under_new = document.elementsFromPoint(x, y).find((node) => !item.contains(node));
-        if (under_new.classList.contains("vertical-menu-item")) {
-          under.style = "";
-          under = under_new;
-          idx = [...list.childNodes].indexOf(under.parentNode);
-          const coords = under.getBoundingClientRect();
-          if (idx < list.childNodes.length && y - coords.y > coords.height / 2) {
-            under.style.borderBottom = "2px solid white";
-            idx++;
-          }
-          else
-            under.style.borderTop = "2px solid white";
+        var under = idx < list.childNodes.length ? list.childNodes[idx] : list.lastChild;
+        if (idx < list.childNodes.length)
+          under.style.borderTop = "2px solid white";
+        else
+          under.style.borderBottom = "2px solid white";
+
+        const list_scroll = () => {
+          const coords = list.getBoundingClientRect();
+          const r = Math.min(Math.max((y - coords.y) / coords.height, 0), 1);
+          if (r < 0.15)
+            list.scrollBy(0, -(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" });
+          if (r > 0.85)
+            list.scrollBy(0, 1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" });
+          if (floating)
+            setTimeout(list_scroll, 10)
         }
-      }
-      item.addEventListener("touchmove", onmove, { passive: false });
-      item.ontouchend = (ev) => {
-        const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-        if (touch === undefined)
-          return;
-        id = null;
-        list.insertBefore(item, list.childNodes[idx]);
-        item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
-        floating = false;
-        under.style = "";
-        item.style = "";
-        item.removeEventListener("touchmove", onmove, { passive: false });
-        item.ontouchend = null;
-        item = null;
-      };
-    }, 600);
+        list_scroll();
+
+        item.style.position = "fixed";
+        item.style.height = `${coords.height}px`;
+        item.style.width = `${coords.width}px`;
+        item.style.left = `${coords.x}px`;
+        item.style.top = `${coords.y}px`;
+        item.style.zIndex = 500;
+        item.style.opacity = "70%";
+        const onmove = (ev) => {
+          ev.preventDefault();
+
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          x = touch.clientX;
+          y = touch.clientY;
+
+          const dx = x - x0, dy = y - y0;
+
+          item.style.transform = `translate(${dx}px, ${dy}px)`;
+
+          const under_new = document.elementsFromPoint(x, y).find((node) => !item.contains(node));
+          if (under_new.classList.contains("vertical-menu-item")) {
+            under.style = "";
+            under = under_new;
+            idx = [...list.childNodes].indexOf(under.parentNode);
+            const coords = under.getBoundingClientRect();
+            if (idx < list.childNodes.length && y - coords.y > coords.height / 2) {
+              under.style.borderBottom = "2px solid white";
+              idx++;
+            }
+            else
+              under.style.borderTop = "2px solid white";
+          }
+        }
+        item.addEventListener("touchmove", onmove, { passive: false });
+        item.ontouchend = (ev) => {
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          id = null;
+          list.insertBefore(item, list.childNodes[idx]);
+          item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
+          floating = false;
+          under.style = "";
+          item.style = "";
+          item.removeEventListener("touchmove", onmove, { passive: false });
+          item.ontouchend = null;
+          item = null;
+        };
+      }, 600);
   }
   list.addEventListener("touchmove", (ev) => {
     if (!drag)

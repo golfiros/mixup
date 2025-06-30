@@ -460,86 +460,87 @@ const impl_mixer_new = (props) => {
     floating = true;
 
     item = ev.target.parentNode;
-    setTimeout(() => {
-      if (!floating)
-        return;
-
-      drag = false;
-      item = item.parentNode;
-      const coords = item.getBoundingClientRect();
-
-      var idx = [...channels.childNodes].indexOf(item);
-      document.body.appendChild(item);
-
-      var under = idx < channels.childNodes.length ? channels.childNodes[idx] : channels.lastChild;
-      if (idx < channels.childNodes.length)
-        under.style.borderLeft = "2px solid white";
-      else
-        under.style.borderRight = "2px solid white";
-
-      const list_scroll = () => {
-        const coords = channels.getBoundingClientRect();
-        const r = Math.min(Math.max((x - coords.x) / coords.width, 0), 1);
-        if (r < 0.15)
-          channels.scrollBy(-(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" }, 0);
-        if (r > 0.85)
-          channels.scrollBy(1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" }, 0);
-        if (floating)
-          setTimeout(list_scroll, 10)
-      }
-      list_scroll();
-
-      item.style.position = "fixed";
-      item.style.height = `${coords.height}px`;
-      item.style.width = `${coords.width}px`;
-      item.style.left = `${coords.x}px`;
-      item.style.top = `${coords.y}px`;
-      item.style.zIndex = 500;
-      item.style.opacity = "70%";
-      const onmove = (ev) => {
-        ev.preventDefault();
-
-        const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-        if (touch === undefined)
+    if (channels.childNodes.length > 1)
+      setTimeout(() => {
+        if (!floating)
           return;
-        x = touch.clientX;
-        y = touch.clientY;
 
-        const dx = x - x0, dy = y - y0;
+        drag = false;
+        item = item.parentNode;
+        const coords = item.getBoundingClientRect();
 
-        item.style.transform = `translate(${dx}px, ${dy}px)`;
+        var idx = [...channels.childNodes].indexOf(item);
+        document.body.appendChild(item);
 
-        const under_new = document.elementsFromPoint(x, y)
-          .find((node) => node !== item && node.classList.contains("mixer-channel-div"));
-        if (under_new !== undefined) {
-          under.style = "";
-          under = under_new;
-          idx = [...channels.childNodes].indexOf(under);
-          const coords = under.getBoundingClientRect();
-          if (idx < channels.childNodes.length && x - coords.x > coords.width / 2) {
-            under.style.borderRight = "2px solid white";
-            idx++;
-          }
-          else
-            under.style.borderLeft = "2px solid white";
+        var under = idx < channels.childNodes.length ? channels.childNodes[idx] : channels.lastChild;
+        if (idx < channels.childNodes.length)
+          under.style.borderLeft = "2px solid white";
+        else
+          under.style.borderRight = "2px solid white";
+
+        const list_scroll = () => {
+          const coords = channels.getBoundingClientRect();
+          const r = Math.min(Math.max((x - coords.x) / coords.width, 0), 1);
+          if (r < 0.15)
+            channels.scrollBy(-(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" }, 0);
+          if (r > 0.85)
+            channels.scrollBy(1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" }, 0);
+          if (floating)
+            setTimeout(list_scroll, 10)
         }
-      }
-      item.addEventListener("touchmove", onmove, { passive: false });
-      item.ontouchend = (ev) => {
-        const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-        if (touch === undefined)
-          return;
-        id = null;
-        channels.insertBefore(item, channels.childNodes[idx]);
-        item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
-        floating = false;
-        under.style = "";
-        item.style = "";
-        item.removeEventListener("touchmove", onmove, { passive: false });
-        item.ontouchend = null;
-        item = null;
-      };
-    }, 600);
+        list_scroll();
+
+        item.style.position = "fixed";
+        item.style.height = `${coords.height}px`;
+        item.style.width = `${coords.width}px`;
+        item.style.left = `${coords.x}px`;
+        item.style.top = `${coords.y}px`;
+        item.style.zIndex = 500;
+        item.style.opacity = "70%";
+        const onmove = (ev) => {
+          ev.preventDefault();
+
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          x = touch.clientX;
+          y = touch.clientY;
+
+          const dx = x - x0, dy = y - y0;
+
+          item.style.transform = `translate(${dx}px, ${dy}px)`;
+
+          const under_new = document.elementsFromPoint(x, y)
+            .find((node) => node !== item && node.classList.contains("mixer-channel-div"));
+          if (under_new !== undefined) {
+            under.style = "";
+            under = under_new;
+            idx = [...channels.childNodes].indexOf(under);
+            const coords = under.getBoundingClientRect();
+            if (idx < channels.childNodes.length && x - coords.x > coords.width / 2) {
+              under.style.borderRight = "2px solid white";
+              idx++;
+            }
+            else
+              under.style.borderLeft = "2px solid white";
+          }
+        }
+        item.addEventListener("touchmove", onmove, { passive: false });
+        item.ontouchend = (ev) => {
+          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+          if (touch === undefined)
+            return;
+          id = null;
+          channels.insertBefore(item, channels.childNodes[idx]);
+          item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
+          floating = false;
+          under.style = "";
+          item.style = "";
+          item.removeEventListener("touchmove", onmove, { passive: false });
+          item.ontouchend = null;
+          item = null;
+        };
+      }, 600);
   };
   channels.addEventListener("touchmove", (ev) => {
     if (!drag)
