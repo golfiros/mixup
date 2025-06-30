@@ -3,6 +3,7 @@
 #include "map.h"
 #include "mixer.h"
 #include "mixup.h"
+#include <math.h>
 #include <string.h>
 
 #define RPC_PRINT_TYPES                                                        \
@@ -54,36 +55,62 @@ static void process(void *_data) {
       for (size_t i = 0; i < data->buffer_size; i++)
         input->buffer[i][0] = (*input->port_data[0])[i];
     else
-      for (size_t i = 0; i < data->buffer_size; i++)
-        input->buffer[i][0] = 0.0f;
+      for (size_t t = 0; t < data->buffer_size; t++)
+        input->buffer[t][0] = 0.0f;
     if (input->port_data[1] && *input->port_data[1])
-      for (size_t i = 0; i < data->buffer_size; i++)
-        input->buffer[i][1] = (*input->port_data[1])[i];
+      for (size_t t = 0; t < data->buffer_size; t++)
+        input->buffer[t][1] = (*input->port_data[1])[t];
     else
-      for (size_t i = 0; i < data->buffer_size; i++)
-        input->buffer[i][1] = input->buffer[i][0];
-    for (size_t i = 0; i < data->buffer_size; i++)
+      for (size_t t = 0; t < data->buffer_size; t++)
+        input->buffer[t][1] = input->buffer[t][0];
+    for (size_t t = 0; t < data->buffer_size; t++) {
+      float2 y = {input->buffer[t][0], input->buffer[t][1]}, *p0, *p1;
+      for (size_t s = 0; s < INPUT_EQ_STAGES; s++) {
+        float2 x = {y[0], y[1]};
+
+        p0 = input->eq_buffer[s], p1 = p0 + 1;
+        for (size_t j = 0; j < 2; j++)
+          y[j] = input->eq_coeffs[s].b[0] * x[j];
+        for (size_t j = 0; j < 2; j++)
+          y[j] = fmaf(input->eq_coeffs[s].b[1], (*p0)[j], y[j]);
+        for (size_t j = 0; j < 2; j++)
+          y[j] = fmaf(input->eq_coeffs[s].b[2], (*p1)[j], y[j]);
+        for (size_t j = 0; j < 2; j++)
+          (*p1)[j] = (*p0)[j], (*p0)[j] = x[j];
+
+        p0 = input->eq_buffer[s + 1], p1 = p0 + 1;
+        for (size_t j = 0; j < 2; j++)
+          y[j] = fmaf(-input->eq_coeffs[s].a[0], (*p0)[j], y[j]);
+
+        for (size_t j = 0; j < 2; j++)
+          y[j] = fmaf(-input->eq_coeffs[s].a[1], (*p1)[j], y[j]);
+      }
       for (size_t j = 0; j < 2; j++)
-        input->buffer[i][j] *= input->vol[j];
+        (*p1)[j] = (*p0)[j], input->buffer[t][j] = (*p0)[j] = y[j];
+    }
+    for (size_t t = 0; t < data->buffer_size; t++)
+      for (size_t j = 0; j < 2; j++)
+        input->buffer[t][j] *= input->vol[j];
   }
   vec_foreach(mixer, data->mixers) {
     for (size_t c = 0; c < mixer->channels.n; c++) {
       if (mixer->sources[c])
-        for (size_t i = 0; i < data->buffer_size; i++)
+        for (size_t t = 0; t < data->buffer_size; t++)
           for (size_t j = 0; j < 2; j++)
-            mixer->buffer[mixer->channels.n * i + c][j] =
-                (*mixer->sources[c])[i][j];
+            mixer->buffer[mixer->channels.n * t + c][j] =
+                (*mixer->sources[c])[t][j];
       else
-        for (size_t i = 0; i < data->buffer_size; i++)
+        for (size_t t = 0; t < data->buffer_size; t++)
           for (size_t j = 0; j < 2; j++)
-            mixer->buffer[mixer->channels.n * i + c][j] = 0.0f;
+            mixer->buffer[mixer->channels.n * t + c][j] = 0.0f;
     }
-    for (size_t i = 0; i < data->buffer_size; i++)
+    for (size_t t = 0; t < data->buffer_size; t++)
       for (size_t c = 0; c < mixer->channels.n; c++)
         for (size_t j = 0; j < 2; j++)
-          if (mixer->port_data[j])
-            (*mixer->port_data[j])[i] +=
-                mixer->vols[c][j] * mixer->buffer[mixer->channels.n * i + c][j];
+          if (mixer->port_data[j] && *mixer->port_data[j])
+            (*mixer->port_data[j])[t] = fmaf(
+                mixer->vols[c][j], mixer->buffer[mixer->channels.n * t + c][j],
+                (*mixer->port_data[j])[t]);
   }
 }
 
@@ -101,6 +128,11 @@ static void buffer_size(void *_data, size_t buffer_size) {
 static void sample_rate(void *_data, double sample_rate) {
   struct data *data = _data;
   data->sample_rate = sample_rate;
+  if (sample_rate)
+    vec_foreach(input, data->inputs) {
+      for (size_t i = 0; i < INPUT_EQ_STAGES; i++)
+        input_update_eq(input, i, sample_rate);
+    }
 }
 
 RPC_DEFN(init) {

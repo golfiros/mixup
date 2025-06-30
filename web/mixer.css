@@ -24,6 +24,7 @@
 }
 .mixer-channel-div {
   min-width: calc(100% * var(--fader-width) / (1 - var(--fader-width)));
+  width: calc(100% * var(--fader-width) / (1 - var(--fader-width)));
 }
 
 .mixer-channel {

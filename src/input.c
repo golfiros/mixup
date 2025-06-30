@@ -6,6 +6,8 @@
 
 #define INPUT_MIN_GAIN -24.0
 #define INPUT_MAX_GAIN 24.0
+#define EQ_MIN_FREQ 20.0
+#define EQ_MAX_FREQ 20000.0
 
 #define RPC_EXTRACT_TYPES struct input * : _rpc_extract_obj
 #define RPC_PRINT_TYPES struct input * : print_input
@@ -15,14 +17,43 @@ void print_input(FILE *fp, va_list *ap) {
   struct input *input = va_arg(*ap, typeof(input));
   fprintf(fp,
           "{\"id\":\"%s\",\"name\":\"%s\",\"port\":[\"%s\",\"%s\"],\"gain\":%f,"
-          "\"balance\":%f}",
+          "\"balance\":%f,\"eq\":[",
           input->id, input->name, input->port[0], input->port[1], input->gain,
           input->balance);
+  for (size_t i = 0; i < INPUT_EQ_STAGES; i++) {
+    if (i)
+      fprintf(fp, ",");
+    fprintf(fp, "{\"freq\":%f,\"quality\":%f,\"gain\":%f}", input->eq[i].freq,
+            input->eq[i].quality, input->eq[i].gain);
+  }
+  fprintf(fp, "]}");
 }
 
 static inline void _update_vol(struct input *input) {
   input->vol[0] = DB_TO_AMP(input->gain) * PAN_LINL(input->balance);
   input->vol[1] = DB_TO_AMP(input->gain) * PAN_LINR(input->balance);
+}
+void input_update_eq(struct input *input, size_t stage, double rate) {
+  // from the Audio EQ cookbook https://www.w3.org/TR/audio-eq-cookbook/
+  double A = DB_TO_AMP(0.5 * input->eq[stage].gain);
+  double w0 = 2.0 * M_PI * input->eq[stage].freq / rate;
+  double alpha = 0.5 * sin(w0) / input->eq[stage].quality, cc = cos(w0);
+  double a[3], b[3];
+  if (!stage) // high pass, H(s) = s2 / (s2 + s / Q + 1)
+    a[0] = 1.0 + alpha, a[1] = -2.0 * cc, a[2] = 1.0 - alpha, b[1] = -(1 + cc),
+    b[0] = b[2] = -0.5 * b[1];
+  else if (stage ==
+           INPUT_EQ_STAGES - 1) // low pass, H(s) = 1 / (s2 + s / Q + 1)
+    a[0] = 1.0 + alpha, a[1] = -2.0 * cc, a[2] = 1.0 - alpha, b[1] = 1 - cc,
+    b[0] = b[2] = 0.5 * b[1];
+  else // EQ, H(s) = (s2 + As / Q + 1) / (s2 + s / AQ + 2)
+    a[0] = 1.0 + alpha / A, a[1] = -2.0 * cc, a[2] = 1.0 - alpha / A,
+    b[0] = 1 + alpha * A, b[1] = a[1], b[2] = 1 - alpha * A;
+  for (size_t i = 0; i < 3; i++) {
+    if (i)
+      input->eq_coeffs[stage].a[i - 1] = a[i] / a[0];
+    input->eq_coeffs[stage].b[i] = b[i] / a[0];
+  }
 }
 
 #define PATH_NONE ""
@@ -34,6 +65,9 @@ CBK_DEFN(impl_input_new, (struct input *, input)) {
         realloc(input->buffer, data->buffer_size * sizeof *input->buffer);
   vec_push(&data->inputs, input);
   _update_vol(input);
+  if (data->sample_rate)
+    for (size_t i = 0; i < INPUT_EQ_STAGES; i++)
+      input_update_eq(input, i, data->sample_rate);
 }
 RPC_DEFN(input_new) {
   struct data *data = rpc_data();
@@ -46,6 +80,14 @@ RPC_DEFN(input_new) {
                        }),
       .name = strdup("# input"),
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
+      .eq =
+          {
+              {.freq = EQ_MIN_FREQ, .quality = 1.0, .gain = 0.0},
+              {.freq = 200.0, .quality = 1.0, .gain = 0.0},
+              {.freq = 1000.0, .quality = 1.0, .gain = 0.0},
+              {.freq = 5000.0, .quality = 1.0, .gain = 0.0},
+              {.freq = EQ_MAX_FREQ, .quality = 1.0, .gain = 0.0},
+          },
 
       .buffer = malloc(0),
   };
