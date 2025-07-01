@@ -21,6 +21,13 @@ if (data_str === null) {
         port: [`audio:node_${node}:capture_${port}`, ""],
         gain: 15.0 * Math.random() - 7.5,
         balance: 160.0 * Math.random() - 80.0,
+        eq: [50, 200, 1000, 5000, 15000].map((f) => {
+          return {
+            gain: 12.0 * Math.random() - 6.0,
+            quality: Math.exp(3 * Math.random() - 0.5 * Math.log(2)),
+            freq: Math.exp(0.05 * Math.random() + Math.log(f)),
+          };
+        }),
       });
     }
   for (var node = 12; node < 16; node++)
@@ -30,6 +37,13 @@ if (data_str === null) {
       port: [`audio:node_${node}:capture_0`, `audio:node_${node}:capture_1`],
       gain: 15.0 * Math.random() - 7.5,
       balance: 160.0 * Math.random() - 80.0,
+      eq: [50, 200, 1000, 5000, 15000].map((f) => {
+        return {
+          gain: 12.0 * Math.random() - 6.0,
+          quality: Math.exp(1 * Math.random() - 0.5 * Math.log(2)),
+          freq: Math.exp(0.05 * Math.random() + Math.log(f)),
+        };
+      }),
     });
   for (var node = 0; node < 6; node++)
     data.mixers.push({
@@ -44,6 +58,7 @@ if (data_str === null) {
           src: input.id,
           gain: 30.0 * Math.random() - 27.0,
           balance: 160.0 * Math.random() - 80.0,
+          mute: Math.random() > 0.90,
         }
       }),
     });
@@ -60,6 +75,13 @@ const rpc = window.rpc = {
       port: ["", ""],
       gain: 0.0,
       balance: 0.0,
+      eq: [50, 200, 1000, 5000, 15000].map((f) => {
+        return {
+          gain: 0.,
+          quality: 1 / Math.sqrt(2),
+          freq: f,
+        };
+      }),
     };
     data.inputs.push(input);
     localStorage.setItem("dummy_storage", JSON.stringify(data));
@@ -90,6 +112,21 @@ const rpc = window.rpc = {
     data.inputs.find((input) => input.id === id).balance = balance
     localStorage.setItem("dummy_storage", JSON.stringify(data));
     return new Promise((resolve) => resolve(balance));
+  },
+  input_set_eq_freq: (id, stage, freq) => {
+    data.inputs.find((input) => input.id === id).eq[stage].freq = freq
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(freq));
+  },
+  input_set_eq_quality: (id, stage, quality) => {
+    data.inputs.find((input) => input.id === id).eq[stage].quality = quality
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(quality));
+  },
+  input_set_eq_gain: (id, stage, gain) => {
+    data.inputs.find((input) => input.id === id).eq[stage].gain = gain
+    localStorage.setItem("dummy_storage", JSON.stringify(data));
+    return new Promise((resolve) => resolve(gain));
   },
 
   mixer_new: () => new Promise((resolve) => {
@@ -133,6 +170,7 @@ const rpc = window.rpc = {
       src: "00000000-0000-0000-0000-000000000000",
       gain: 0.0,
       balance: 0.0,
+      mute: true,
     };
     const mixer = data.mixers.find((mixer) => mixer.id === mix_id);
     mixer.channels.push(channel);

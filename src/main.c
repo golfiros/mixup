@@ -81,7 +81,6 @@ static void process(void *_data) {
         p0 = input->eq_buffer[s + 1], p1 = p0 + 1;
         for (size_t j = 0; j < 2; j++)
           y[j] = fmaf(-input->eq_coeffs[s].a[0], (*p0)[j], y[j]);
-
         for (size_t j = 0; j < 2; j++)
           y[j] = fmaf(-input->eq_coeffs[s].a[1], (*p1)[j], y[j]);
       }
@@ -182,6 +181,9 @@ int main(int, char **) {
   srv_reg(data.srv, input_set_port, "input_set_port");
   srv_reg(data.srv, input_set_gain, "input_set_gain");
   srv_reg(data.srv, input_set_balance, "input_set_balance");
+  srv_reg(data.srv, input_set_eq_freq, "input_set_eq_freq");
+  srv_reg(data.srv, input_set_eq_quality, "input_set_eq_quality");
+  srv_reg(data.srv, input_set_eq_gain, "input_set_eq_gain");
 
   srv_reg(data.srv, mixer_new, "mixer_new");
   srv_reg(data.srv, mixer_delete, "mixer_delete");

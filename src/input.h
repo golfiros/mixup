@@ -36,5 +36,8 @@ void input_set_name(void *);
 void input_set_port(void *);
 void input_set_gain(void *);
 void input_set_balance(void *);
+void input_set_eq_freq(void *);
+void input_set_eq_quality(void *);
+void input_set_eq_gain(void *);
 
 #endif

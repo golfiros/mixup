@@ -1,14 +1,14 @@
-const fader_max = 6, fader_min = -60, fader_offset = 0.1, fader_slope = 0.15;
+const FADER_MAX = 6, FADER_MIN = -60, FADER_OFFSET = 0.1, FADER_SLOPE = 0.15;
 const fader_curve = (x) =>
-  (fader_max - fader_min) *
-  (Math.pow(x + fader_offset, fader_slope) - Math.pow(fader_offset, fader_slope)) /
-  (Math.pow(1 + fader_offset, fader_slope) - Math.pow(fader_offset, fader_slope))
-  + fader_min;
+  (FADER_MAX - FADER_MIN) *
+  (Math.pow(x + FADER_OFFSET, FADER_SLOPE) - Math.pow(FADER_OFFSET, FADER_SLOPE)) /
+  (Math.pow(1 + FADER_OFFSET, FADER_SLOPE) - Math.pow(FADER_OFFSET, FADER_SLOPE))
+  + FADER_MIN;
 const fader_curve_inv = (y) =>
-  fader_offset * (Math.pow(
-    (Math.pow(1 + 1 / fader_offset, fader_slope) - 1) *
-    (y - fader_min) / (fader_max - fader_min) + 1,
-    1 / fader_slope
+  FADER_OFFSET * (Math.pow(
+    (Math.pow(1 + 1 / FADER_OFFSET, FADER_SLOPE) - 1) *
+    (y - FADER_MIN) / (FADER_MAX - FADER_MIN) + 1,
+    1 / FADER_SLOPE
   ) - 1);
 
 const update_balance = (balance) => {
@@ -112,10 +112,10 @@ const impl_channel_new = (id, props) => {
   const gain_ruler = document.createElement("div");
   gain_div.appendChild(gain_ruler);
   gain_ruler.classList.add("mixer-channel-ruler");
-  for (var i = 0; i < 12; i++) {
+  for (let i = 0; i < 12; i++) {
     const tick = document.createElement("div");
     gain_ruler.appendChild(tick);
-    tick.style.bottom = `calc(${100 * fader_curve_inv((fader_max - fader_min) * (i / 11) + fader_min)}% - 2px)`;
+    tick.style.bottom = `calc(${100 * fader_curve_inv((FADER_MAX - FADER_MIN) * (i / 11) + FADER_MIN)}% - 2px)`;
   }
 
   const gain_indicator = document.createElement("div");
@@ -138,10 +138,6 @@ const impl_channel_new = (id, props) => {
   gain.value = 100 * fader_curve_inv(props.gain);
   gain.oninput = gain.onchange = () => {
     rpc.channel_set_gain(props.id, fader_curve(parseFloat(gain.value) / 100))
-      .then((res) => {
-        if (res !== null)
-          gain.value = 100 * fader_curve_inv(res);
-      });
     update_gain(gain);
   }
 
@@ -243,7 +239,7 @@ const impl_channel_new = (id, props) => {
   balance_div.appendChild(balance_ruler);
   balance_ruler.classList.add("channel-balance-ruler");
 
-  for (var i = 0; i < 9; i++)
+  for (let i = 0; i < 9; i++)
     balance_ruler.appendChild(document.createElement("div"));
 
   const balance_labels = document.createElement("div");
@@ -269,10 +265,6 @@ const impl_channel_new = (id, props) => {
     if (Math.abs(balance.value) < 5)
       balance.value = 0;
     rpc.channel_set_balance(props.id, parseFloat(balance.value))
-      .then((res) => {
-        if (res !== null)
-          balance.value = res;
-      });
     update_balance(balance);
   }
 };
@@ -408,7 +400,7 @@ const impl_mixer_new = (props) => {
   menu.appendChild(ports);
   ports.classList.add("ports");
 
-  for (var i = 0; i < 2; i++) {
+  for (let i = 0; i < 2; i++) {
     const idx = i;
 
     const port_button = document.createElement("button")
@@ -606,10 +598,10 @@ const impl_mixer_new = (props) => {
   const master_ruler = document.createElement("div");
   master_div.appendChild(master_ruler);
   master_ruler.classList.add("mixer-channel-ruler");
-  for (var i = 0; i < 12; i++) {
+  for (let i = 0; i < 12; i++) {
     const tick = document.createElement("div");
     master_ruler.appendChild(tick);
-    tick.style.bottom = `calc(${100 * fader_curve_inv((fader_max - fader_min) * (i / 11) + fader_min)}% - 2px)`;
+    tick.style.bottom = `calc(${100 * fader_curve_inv((FADER_MAX - FADER_MIN) * (i / 11) + FADER_MIN)}% - 2px)`;
   }
 
   const master_indicator = document.createElement("div");
@@ -633,10 +625,6 @@ const impl_mixer_new = (props) => {
   update_gain(master_vol);
   master_vol.oninput = master_vol.onchange = () => {
     rpc.mixer_set_master(props.id, fader_curve(parseFloat(master_vol.value) / 100))
-      .then((res) => {
-        if (res !== null)
-          master_vol.value = 100 * fader_curve_inv(res);
-      });
     update_gain(master_vol);
   }
 

@@ -137,3 +137,24 @@
   justify-content: right;
   padding-right: 5%;
 }
+
+.input-eq {
+  position: relative;
+  height: 60%;
+  left: calc(100% * var(--padding-width));
+  width: calc(100% * (1 - 2 * var(--padding-width)));
+  overflow: hidden;
+}
+.input-eq-dot {
+  --input-eq-dot-radius: 1.5vh;
+  z-index: 1;
+  position: absolute;
+  height: calc(2 * var(--input-eq-dot-radius));
+  width: calc(2 * var(--input-eq-dot-radius));
+  border: 0.2vh solid white;
+  border-radius: 50%;
+  background: var(--color-bg);
+}
+.input-eq-dot.active {
+  background: white;
+}

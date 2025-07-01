@@ -8,6 +8,8 @@
 #define INPUT_MAX_GAIN 24.0
 #define EQ_MIN_FREQ 20.0
 #define EQ_MAX_FREQ 20000.0
+#define EQ_MIN_GAIN -18.0
+#define EQ_MAX_GAIN 18.0
 
 #define RPC_EXTRACT_TYPES struct input * : _rpc_extract_obj
 #define RPC_PRINT_TYPES struct input * : print_input
@@ -82,11 +84,11 @@ RPC_DEFN(input_new) {
       .port = {strdup(PATH_NONE), strdup(PATH_NONE)},
       .eq =
           {
-              {.freq = EQ_MIN_FREQ, .quality = 1.0, .gain = 0.0},
-              {.freq = 200.0, .quality = 1.0, .gain = 0.0},
-              {.freq = 1000.0, .quality = 1.0, .gain = 0.0},
-              {.freq = 5000.0, .quality = 1.0, .gain = 0.0},
-              {.freq = EQ_MAX_FREQ, .quality = 1.0, .gain = 0.0},
+              {.freq = EQ_MIN_FREQ, .quality = sqrt(0.5)},
+              {.freq = 200.0, .quality = sqrt(0.5)},
+              {.freq = 1000.0, .quality = sqrt(0.5)},
+              {.freq = 5000.0, .quality = sqrt(0.5)},
+              {.freq = EQ_MAX_FREQ, .quality = sqrt(0.5)},
           },
 
       .buffer = malloc(0),
@@ -231,6 +233,63 @@ RPC_DEFN(input_set_balance, (char *, id), (double, balance)) {
   free(id);
   if (balance != input->balance)
     rpc_return(input->balance);
+  else
+    rpc_return();
+}
+
+CBK_DEFN(impl_input_update_eq, (struct input *, input), (size_t, stage)) {
+  struct data *data = cbk_data();
+  if (data->sample_rate)
+    input_update_eq(input, stage, data->sample_rate);
+}
+RPC_DEFN(input_set_eq_freq, (char *, id), (long, stage), (double, freq)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_INPUT) {
+    free(id);
+    rpc_err(-32602, "Provided object is not an input");
+  }
+  struct input *input = obj->ptr;
+  input->eq[stage].freq = fmax(EQ_MIN_FREQ, fmin(EQ_MAX_FREQ, freq));
+  core_cbk(data->core, impl_input_update_eq, input, stage);
+  rpc_relay("input_set_eq_freq", id, stage, input->eq[stage].freq);
+  free(id);
+  if (freq != input->eq[stage].freq)
+    rpc_return(input->eq[stage].freq);
+  else
+    rpc_return();
+}
+RPC_DEFN(input_set_eq_quality, (char *, id), (long, stage), (double, quality)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_INPUT) {
+    free(id);
+    rpc_err(-32602, "Provided object is not an input");
+  }
+  struct input *input = obj->ptr;
+  input->eq[stage].quality = fmax(0.1, fmin(10.0, quality));
+  core_cbk(data->core, impl_input_update_eq, input, stage);
+  rpc_relay("input_set_eq_quality", id, stage, input->eq[stage].quality);
+  free(id);
+  if (quality != input->eq[stage].quality)
+    rpc_return(input->eq[stage].quality);
+  else
+    rpc_return();
+}
+RPC_DEFN(input_set_eq_gain, (char *, id), (long, stage), (double, gain)) {
+  struct data *data = rpc_data();
+  struct obj *obj = map_get(data->map, id);
+  if (!obj || obj->type != MIXUP_INPUT) {
+    free(id);
+    rpc_err(-32602, "Provided object is not an input");
+  }
+  struct input *input = obj->ptr;
+  input->eq[stage].gain = fmax(EQ_MIN_GAIN, fmin(EQ_MAX_GAIN, gain));
+  core_cbk(data->core, impl_input_update_eq, input, stage);
+  rpc_relay("input_set_eq_gain", id, stage, input->eq[stage].gain);
+  free(id);
+  if (gain != input->eq[stage].gain)
+    rpc_return(input->eq[stage].gain);
   else
     rpc_return();
 }

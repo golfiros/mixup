@@ -40,9 +40,13 @@
   </div>
 </body>
 
-<script src="web/floater.js" type="module"></script>
-<script src="web/rpc_dummy.js" type="module"></script>
-<script src="web/ports.js" type="module"></script>
-<script src="web/input.js" type="module"></script>
-<script src="web/mixer.js" type="module"></script>
-<script src="web/main.js" type="module"></script>
+<script type="module">
+  const scripts = ["floater", "rpc_dummy", "ports", "input", "mixer", "main"];
+  try {
+    for (let i = 0; i < scripts.length; i++)
+      await import(`/web/${scripts[i]}.js`)
+  } catch {
+    localStorage.clear();
+    location.reload();
+  }
+</script>
