@@ -512,10 +512,15 @@ const impl_input_new = (props) => {
     rpc.input_set_balance(props.id, parseFloat(balance.value))
     update_balance(balance);
   }
+
+  return list_label;
 };
 
 const mixer_new = document.getElementById("input_new");
-mixer_new.onclick = () => rpc.input_new().then(impl_input_new);
+mixer_new.onclick = () => rpc.input_new().then(impl_input_new).then((label) => {
+  label.scrollIntoView();
+  label.dispatchEvent(new Event("click"));
+});
 
 rpc.register("input_new", impl_input_new);
 rpc.register("input_delete", (id) => {

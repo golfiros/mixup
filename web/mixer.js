@@ -267,6 +267,8 @@ const impl_channel_new = (id, props) => {
     rpc.channel_set_balance(props.id, parseFloat(balance.value))
     update_balance(balance);
   }
+
+  return label
 };
 
 const impl_mixer_set_port = (id, idx, path) => {
@@ -632,7 +634,10 @@ const impl_mixer_new = (props) => {
   master_ch.appendChild(channel_new);
   channel_new.classList.add("mixer-channel-new");
   channel_new.innerHTML = "+";
-  channel_new.onclick = () => rpc.channel_new(props.id).then((ch) => impl_channel_new(props.id, ch));
+  channel_new.onclick = () => rpc.channel_new(props.id).then((ch) => impl_channel_new(props.id, ch)).then((label) => {
+    label.scrollIntoView();
+    label.dispatchEvent(new Event("click"));
+  });
 
   const master_label = document.createElement("div");
   master_ch.appendChild(master_label);
@@ -640,10 +645,15 @@ const impl_mixer_new = (props) => {
   master_label.innerHTML = "master";
 
   props.channels.forEach((ch) => impl_channel_new(props.id, ch));
+
+  return list_label;
 };
 
 const mixer_new = document.getElementById("mixer_new");
-mixer_new.onclick = () => rpc.mixer_new().then(impl_mixer_new);
+mixer_new.onclick = () => rpc.mixer_new().then(impl_mixer_new).then((label) => {
+  label.scrollIntoView();
+  label.dispatchEvent(new Event("click"));
+});
 
 rpc.register("mixer_new", impl_mixer_new);
 rpc.register("mixer_delete", (id) => {
