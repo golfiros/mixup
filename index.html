@@ -44,7 +44,7 @@
   const scripts = ["floater", "rpc_dummy", "ports", "input", "mixer", "main"];
   try {
     for (let i = 0; i < scripts.length; i++)
-      await import(`/web/${scripts[i]}.js`)
+      await import(`./web/${scripts[i]}.js`)
   } catch {
     localStorage.clear();
     location.reload();
