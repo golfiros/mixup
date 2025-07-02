@@ -193,7 +193,10 @@ const input_list = document.getElementById("input_list");
 const impl_input_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
-  list_elem.addEventListener("itemdrop", (ev) => rpc.input_set_index(props.id, ev.detail.idx));
+  list_elem.addEventListener("itemdrop", (ev) => {
+    rpc.input_set_index(props.id, ev.detail.idx)
+    list_elem.scrollIntoView();
+  });
   list_elem.name = props.id;
 
   const list_label = document.createElement("button");
@@ -246,10 +249,10 @@ const impl_input_new = (props) => {
   const label_observer = new MutationObserver(() => {
     if (!document.contains(input))
       label_observer.disconnect();
-    else {
-      const idx = [...input_list.childNodes].indexOf(list_elem);
-      list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
-    }
+    else if (list_elem.style.position === "fixed")
+      list_label.innerHTML = label.innerHTML = name.value;
+    else
+      list_label.innerHTML = label.innerHTML = name.value.replace("#", [...input_list.childNodes].indexOf(list_elem) + 1);
   });
   label_observer.observe(input_list, { childList: true });
 

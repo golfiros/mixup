@@ -99,7 +99,10 @@ const impl_channel_new = (id, props) => {
   const channel_div = document.createElement("div");
   channel_div.id = props.id;
   channel_div.classList.add("mixer-channel-div");
-  channel_div.addEventListener("itemdrop", (ev) => rpc.channel_set_index(props.id, ev.detail.idx));
+  channel_div.addEventListener("itemdrop", (ev) => {
+    rpc.channel_set_index(props.id, ev.detail.idx)
+    channel_div.scrollIntoView();
+  });
 
   const channel = document.createElement("div");
   channel_div.appendChild(channel);
@@ -185,10 +188,10 @@ const impl_channel_new = (id, props) => {
   const label_observer = new MutationObserver(() => {
     if (!document.contains(channel_div))
       label_observer.disconnect();
-    else {
-      const idx = [...channels.childNodes].indexOf(channel_div);
-      menu.title = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
-    }
+    else if (channel_div.style.position === "fixed")
+      menu.title = label.innerHTML = name.value;
+    else
+      menu.title = label.innerHTML = name.value.replace("#", [...channels.childNodes].indexOf(channel_div) + 1);
   });
   label_observer.observe(channels, { childList: true });
   channels.appendChild(channel_div);
@@ -331,7 +334,10 @@ const mixer_list = document.getElementById("mixer_list");
 const impl_mixer_new = (props) => {
   const list_elem = document.createElement("li");
   list_elem.id = `${props.id}_elem`;
-  list_elem.addEventListener("itemdrop", (ev) => rpc.mixer_set_index(props.id, ev.detail.idx));
+  list_elem.addEventListener("itemdrop", (ev) => {
+    rpc.mixer_set_index(props.id, ev.detail.idx)
+    list_elem.scrollIntoView();
+  });
   list_elem.name = props.id;
 
   const list_label = document.createElement("button");
@@ -384,10 +390,10 @@ const impl_mixer_new = (props) => {
   const label_observer = new MutationObserver(() => {
     if (!document.contains(mixer))
       label_observer.disconnect();
-    else {
-      const idx = [...mixer_list.childNodes].indexOf(list_elem);
-      list_label.innerHTML = label.innerHTML = idx >= 0 ? name.value.replace("#", idx + 1) : name.value;
-    }
+    else if (list_elem.style.position === "fixed")
+      list_label.innerHTML = label.innerHTML = name.value;
+    else
+      list_label.innerHTML = label.innerHTML = name.value.replace("#", [...mixer_list.childNodes].indexOf(list_elem) + 1);
   });
   label_observer.observe(mixer_list, { childList: true });
 
@@ -437,157 +443,125 @@ const impl_mixer_new = (props) => {
   mixer_console.appendChild(channels);
   channels.id = `${props.id}_channels`;
   channels.classList.add("mixer-channels");
-  var x, x0, y, y0, id = null;
-  var drag = false, swipe = false, floating = false;
-  var item = null;
+
+  const modes = Object.freeze({ SCROLL: 0, SWIPE: 1, FLOAT: 2 });
+  var x0, y0, x, id = null, mode, item, under, idx, coords;
   channels.ontouchstart = (ev) => {
-    if (!ev.target.classList.contains("mixer-channel-label") &&
-      !ev.target.classList.contains("mixer-channel-mute") || id !== null)
+    if (id !== null)
       return;
 
-    x = x0 = ev.changedTouches[0].clientX;
-    y = y0 = ev.changedTouches[0].clientY;
-    id = ev.changedTouches[0].identifier;
+    const touch = ev.changedTouches[0];
+    id = touch.identifier;
+    x = x0 = touch.clientX, y0 = touch.clientY;
 
-    drag = true;
-    swipe = false;
-    floating = true;
+    if (!ev.target.classList.contains("mixer-channel-label") && !ev.target.classList.contains("mixer-channel-mute"))
+      return;
 
+    mode = null;
     item = ev.target.parentNode;
-    if (channels.childNodes.length > 1)
-      setTimeout(() => {
-        if (!floating)
-          return;
 
-        drag = false;
-        item = item.parentNode;
-        const coords = item.getBoundingClientRect();
-
-        var idx = [...channels.childNodes].indexOf(item);
-        document.body.appendChild(item);
-
-        var under = idx < channels.childNodes.length ? channels.childNodes[idx] : channels.lastChild;
-        if (idx < channels.childNodes.length)
-          under.style.borderLeft = "2px solid white";
-        else
-          under.style.borderRight = "2px solid white";
-
-        const list_scroll = () => {
-          const coords = channels.getBoundingClientRect();
-          const r = Math.min(Math.max((x - coords.x) / coords.width, 0), 1);
-          if (r < 0.15)
-            channels.scrollBy(-(1 + 10 * (0.15 - r) / 0.15), { behavior: "smooth" }, 0);
-          if (r > 0.85)
-            channels.scrollBy(1 + 10 * (r - 0.85) / 0.15, { behavior: "smooth" }, 0);
-          if (floating)
-            setTimeout(list_scroll, 10)
-        }
-        list_scroll();
-
-        item.style.position = "fixed";
-        item.style.height = `${coords.height}px`;
-        item.style.width = `${coords.width}px`;
-        item.style.left = `${coords.x}px`;
-        item.style.top = `${coords.y}px`;
-        item.style.zIndex = 500;
-        item.style.opacity = "70%";
-        const onmove = (ev) => {
-          ev.preventDefault();
-
-          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-          if (touch === undefined)
-            return;
-          x = touch.clientX;
-          y = touch.clientY;
-
-          const dx = x - x0, dy = y - y0;
-
-          item.style.transform = `translate(${dx}px, ${dy}px)`;
-
-          const under_new = document.elementsFromPoint(x, y)
-            .find((node) => node !== item && node.classList.contains("mixer-channel-div"));
-          if (under_new !== undefined) {
-            under.style = "";
-            under = under_new;
-            idx = [...channels.childNodes].indexOf(under);
-            const coords = under.getBoundingClientRect();
-            if (idx < channels.childNodes.length && x - coords.x > coords.width / 2) {
-              under.style.borderRight = "2px solid white";
-              idx++;
-            }
-            else
-              under.style.borderLeft = "2px solid white";
-          }
-        }
-        item.addEventListener("touchmove", onmove, { passive: false });
-        item.ontouchend = (ev) => {
-          const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-          if (touch === undefined)
-            return;
-          id = null;
-          channels.insertBefore(item, channels.childNodes[idx]);
-          item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
-          floating = false;
-          under.style = "";
-          item.style = "";
-          item.removeEventListener("touchmove", onmove, { passive: false });
-          item.ontouchend = null;
-          item = null;
-        };
-      }, 600);
-  };
-  channels.addEventListener("touchmove", (ev) => {
-    if (!drag)
-      return;
-
-    const touch = [...ev.changedTouches].find((t) => t.identifier === id);
-    if (touch === undefined)
-      return;
-
-    floating = false;
-
-    x = touch.clientX;
-    y = touch.clientY;
-
-    const dx = x - x0, dy = y - y0;
-
-    if (!swipe) {
-      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5)
-        swipe = true;
-      else if (Math.abs(dx) > Math.abs(dy)) {
-        drag = false;
+    setTimeout(() => {
+      if (id === null || mode !== null || channels.childNodes.length <= 1)
         return;
+
+      mode = modes.FLOAT;
+      item = item.parentNode;
+
+      coords = item.getBoundingClientRect();
+      item.style.position = "fixed";
+      item.style.height = `${coords.height}px`;
+      item.style.width = `${coords.width}px`;
+      item.style.left = `${coords.x}px`;
+      item.style.top = `${coords.y}px`;
+      item.style.zIndex = 500;
+      item.style.opacity = "70%";
+
+      idx = [...channels.childNodes].indexOf(item);
+      channels.appendChild(item);
+
+      under = channels.childNodes[idx < channels.childNodes.length - 1 ? idx : idx - 1];
+      if (idx < channels.childNodes.length - 1)
+        under.style.borderLeft = "2px solid white";
+      else
+        under.style.borderRight = "2px solid white";
+
+      const x0 = channels.getBoundingClientRect().x, w = channels.getBoundingClientRect().width, f = 2 * coords.width / (3 * w);
+      const list_scroll = () => {
+        const r = Math.min(Math.max((x - x0) / w, 0), 1);
+        if (r < f)
+          channels.scrollBy(-(1 + 10 * (f - r) / f), 0, { behavior: "smooth" });
+        if (r > 1 - f)
+          channels.scrollBy(1 + 10 * (r - (1 - f)) / f, 0, { behavior: "smooth" });
+        if (mode === modes.FLOAT)
+          setTimeout(list_scroll, 10)
       }
+      list_scroll();
+    }, 600);
+  }
+  channels.addEventListener("touchmove", (ev) => {
+    const touch = [...ev.changedTouches].find((t) => t.identifier === id);
+    if (touch === undefined || item === null)
+      return;
+
+    const dx = (x = touch.clientX) - x0, dy = touch.clientY - y0;
+
+    if (mode === null) {
+      if (Math.abs(dx) > Math.abs(dy))
+        mode = modes.SCROLL;
+      else if (Math.abs(dy) > 5)
+        mode = modes.SWIPE;
     }
 
-    if (swipe) {
+    if (mode !== modes.SCROLL)
       ev.preventDefault();
+
+    if (mode === modes.SWIPE)
       item.style.transform = `translateY(${dy < 0 ? Math.max(dy, -0.25 * channels.offsetHeight) : 0}px)`;
+
+    if (mode === modes.FLOAT) {
+      item.style.transform = `translate(${dx}px, ${dy}px)`;
+
+      const under_new = document.elementsFromPoint(touch.clientX, touch.clientY)
+        .find((node) => !item.contains(node) && node.classList.contains("mixer-channel-div"));
+      if (under_new !== undefined) {
+        under.style = "";
+        under = under_new;
+        idx = [...channels.childNodes].indexOf(under);
+        const coords = under.getBoundingClientRect();
+        if (touch.clientX - coords.x > coords.width / 2) {
+          under.style.borderRight = "2px solid white";
+          idx++;
+        }
+        else
+          under.style.borderLeft = "2px solid white";
+      }
     }
   }, { passive: false });
   channels.ontouchend = (ev) => {
-    if (!item)
-      return;
-
     const touch = [...ev.changedTouches].find((t) => t.identifier === id);
     if (touch === undefined)
       return;
 
-    floating = false;
-
     id = null;
-    drag = false;
+    if (item === null)
+      return;
 
-    const dy = y - y0;
+    if (mode === modes.SWIPE) {
+      if (touch.clientY - y0 < -0.125 * channels.offsetHeight)
+        item.style.transform = `translateY(${-0.25 * channels.offsetHeight}px)`;
+      else
+        item.style.transform = `translateY(0px)`;
+    } else if (mode === modes.FLOAT) {
+      channels.insertBefore(item, channels.childNodes[idx]);
+      under.style = "";
+      item.style = "";
+      item.dispatchEvent(new CustomEvent("itemdrop", { detail: { idx: idx } }));
+    }
 
-    if (swipe && dy < -0.125 * channels.offsetHeight)
-      item.style.transform = `translateY(${-0.25 * channels.offsetHeight}px)`;
-    else
-      item.style.transform = `translateY(0)`;
-
+    mode = null;
     item = null;
-    swipe = false;
-  };
+    id = null;
+  }
 
   const master_ch = document.createElement("div");
   mixer_console.appendChild(master_ch);
